@@ -8,9 +8,11 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "seed": "tsx ./src/seed.ts"
   },
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  },
   "devDependencies": {
     "@types/node": "catalog:",
-    "@workspace/db": "workspace:*",
     "tsx": "catalog:"
   }
 }

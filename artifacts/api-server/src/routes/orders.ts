@@ -1,18 +1,41 @@
 import { Router, type IRouter } from "express";
-import { db } from "@workspace/db";
-import {
-  cartsTable,
-  cartItemsTable,
-  variantsTable,
-  productsTable,
-  brandsTable,
-  ordersTable,
-  orderItemsTable,
-} from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { fdb, genId } from "../lib/firestore";
 import crypto from "node:crypto";
 
 const router: IRouter = Router();
+
+type OrderItem = {
+  id: number;
+  variantId: number;
+  productId: number;
+  productName: string;
+  productSlug: string;
+  brand: string;
+  sizeMl: number;
+  imageUrl: string;
+  unitPriceCents: number;
+  quantity: number;
+  lineTotalCents: number;
+};
+
+type OrderDoc = {
+  id: number;
+  orderNumber: string;
+  status: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  shippingAddress: string;
+  city: string;
+  shippingMethod: string;
+  paymentMethod: string;
+  notes: string | null;
+  subtotalCents: number;
+  shippingCents: number;
+  totalCents: number;
+  items: OrderItem[];
+  createdAt: number;
+};
 
 function shippingCostCents(method: string) {
   switch (method) {
@@ -25,6 +48,27 @@ function shippingCostCents(method: string) {
     default:
       return 0;
   }
+}
+
+function serialize(o: OrderDoc) {
+  return {
+    id: o.id,
+    orderNumber: o.orderNumber,
+    status: o.status,
+    customerName: o.customerName,
+    customerEmail: o.customerEmail,
+    customerPhone: o.customerPhone,
+    shippingAddress: o.shippingAddress,
+    city: o.city,
+    shippingMethod: o.shippingMethod,
+    paymentMethod: o.paymentMethod,
+    notes: o.notes ?? undefined,
+    subtotalCents: o.subtotalCents,
+    shippingCents: o.shippingCents,
+    totalCents: o.totalCents,
+    items: o.items,
+    createdAt: new Date(o.createdAt).toISOString(),
+  };
 }
 
 router.post("/orders", async (req, res) => {
@@ -52,52 +96,79 @@ router.post("/orders", async (req, res) => {
     return;
   }
 
-  const cartRows = await db
-    .select()
-    .from(cartsTable)
-    .where(eq(cartsTable.sessionId, req.sessionId))
-    .limit(1);
-  if (!cartRows.length) {
+  const cartRef = fdb().collection("carts").doc(req.sessionId);
+  const cartSnap = await cartRef.get();
+  if (!cartSnap.exists) {
     res.status(400).json({ error: "empty_cart" });
     return;
   }
-  const cart = cartRows[0]!;
-
-  const lineRows = await db
-    .select({
-      quantity: cartItemsTable.quantity,
-      variantId: variantsTable.id,
-      sizeMl: variantsTable.sizeMl,
-      priceCents: variantsTable.priceCents,
-      productId: productsTable.id,
-      productName: productsTable.name,
-      productSlug: productsTable.slug,
-      imageUrl: productsTable.imageUrl,
-      brand: brandsTable.name,
-    })
-    .from(cartItemsTable)
-    .innerJoin(variantsTable, eq(cartItemsTable.variantId, variantsTable.id))
-    .innerJoin(productsTable, eq(variantsTable.productId, productsTable.id))
-    .innerJoin(brandsTable, eq(productsTable.brandId, brandsTable.id))
-    .where(eq(cartItemsTable.cartId, cart.id));
-
-  if (!lineRows.length) {
+  const cart = cartSnap.data() as {
+    items: { id: number; variantId: number; quantity: number }[];
+  };
+  if (!cart.items?.length) {
     res.status(400).json({ error: "empty_cart" });
     return;
   }
 
-  const items = lineRows.map((r) => ({
-    variantId: r.variantId,
-    productId: r.productId,
-    productName: r.productName,
-    productSlug: r.productSlug,
-    brand: r.brand,
-    sizeMl: r.sizeMl,
-    imageUrl: r.imageUrl,
-    unitPriceCents: r.priceCents,
-    quantity: r.quantity,
-    lineTotalCents: r.priceCents * r.quantity,
-  }));
+  const variantSnaps = await Promise.all(
+    cart.items.map((i) =>
+      fdb()
+        .collection("variants")
+        .where("id", "==", i.variantId)
+        .limit(1)
+        .get(),
+    ),
+  );
+  const productSnaps = await Promise.all(
+    variantSnaps.map((s) => {
+      if (s.empty) return null;
+      const v = s.docs[0]!.data() as { productId: number };
+      return fdb()
+        .collection("products")
+        .where("id", "==", v.productId)
+        .limit(1)
+        .get();
+    }),
+  );
+
+  const items: OrderItem[] = [];
+  for (let i = 0; i < cart.items.length; i++) {
+    const vs = variantSnaps[i];
+    const ps = productSnaps[i];
+    if (!vs || vs.empty || !ps || ps.empty) continue;
+    const v = vs.docs[0]!.data() as {
+      id: number;
+      productId: number;
+      sizeMl: number;
+      priceCents: number;
+    };
+    const p = ps.docs[0]!.data() as {
+      id: number;
+      slug: string;
+      name: string;
+      brandName: string;
+      imageUrl: string;
+    };
+    const cartItem = cart.items[i]!;
+    items.push({
+      id: genId(),
+      variantId: v.id,
+      productId: p.id,
+      productName: p.name,
+      productSlug: p.slug,
+      brand: p.brandName,
+      sizeMl: v.sizeMl,
+      imageUrl: p.imageUrl,
+      unitPriceCents: v.priceCents,
+      quantity: cartItem.quantity,
+      lineTotalCents: v.priceCents * cartItem.quantity,
+    });
+  }
+
+  if (!items.length) {
+    res.status(400).json({ error: "empty_cart" });
+    return;
+  }
 
   const subtotalCents = items.reduce((s, i) => s + i.lineTotalCents, 0);
   const shippingCents = shippingCostCents(body.shippingMethod);
@@ -108,117 +179,41 @@ router.post("/orders", async (req, res) => {
     .toString("hex")
     .toUpperCase()}`;
 
-  const [order] = await db
-    .insert(ordersTable)
-    .values({
-      orderNumber,
-      status: "pending",
-      customerName: body.customerName,
-      customerEmail: body.customerEmail,
-      customerPhone: body.customerPhone,
-      shippingAddress: body.shippingAddress,
-      city: body.city,
-      shippingMethod: body.shippingMethod,
-      paymentMethod: body.paymentMethod,
-      notes: body.notes ?? null,
-      subtotalCents,
-      shippingCents,
-      totalCents,
-    })
-    .returning();
+  const order: OrderDoc = {
+    id: genId(),
+    orderNumber,
+    status: "pending",
+    customerName: body.customerName,
+    customerEmail: body.customerEmail,
+    customerPhone: body.customerPhone,
+    shippingAddress: body.shippingAddress,
+    city: body.city,
+    shippingMethod: body.shippingMethod,
+    paymentMethod: body.paymentMethod,
+    notes: body.notes ?? null,
+    subtotalCents,
+    shippingCents,
+    totalCents,
+    items,
+    createdAt: Date.now(),
+  };
 
-  await db.insert(orderItemsTable).values(
-    items.map((i) => ({
-      orderId: order!.id,
-      ...i,
-    })),
-  );
+  await fdb().collection("orders").doc(orderNumber).set(order);
+  await cartRef.set({ items: [], updatedAt: Date.now() });
 
-  await db.delete(cartItemsTable).where(eq(cartItemsTable.cartId, cart.id));
-
-  const inserted = await db
-    .select()
-    .from(orderItemsTable)
-    .where(eq(orderItemsTable.orderId, order!.id));
-
-  res.json({
-    id: order!.id,
-    orderNumber: order!.orderNumber,
-    status: order!.status,
-    customerName: order!.customerName,
-    customerEmail: order!.customerEmail,
-    customerPhone: order!.customerPhone,
-    shippingAddress: order!.shippingAddress,
-    city: order!.city,
-    shippingMethod: order!.shippingMethod,
-    paymentMethod: order!.paymentMethod,
-    notes: order!.notes ?? undefined,
-    subtotalCents: order!.subtotalCents,
-    shippingCents: order!.shippingCents,
-    totalCents: order!.totalCents,
-    items: inserted.map((i) => ({
-      id: i.id,
-      variantId: i.variantId,
-      productId: i.productId,
-      productName: i.productName,
-      productSlug: i.productSlug,
-      brand: i.brand,
-      sizeMl: i.sizeMl,
-      imageUrl: i.imageUrl,
-      unitPriceCents: i.unitPriceCents,
-      quantity: i.quantity,
-      lineTotalCents: i.lineTotalCents,
-    })),
-    createdAt: order!.createdAt.toISOString(),
-  });
+  res.json(serialize(order));
 });
 
 router.get("/orders/:orderNumber", async (req, res) => {
-  const orderRows = await db
-    .select()
-    .from(ordersTable)
-    .where(eq(ordersTable.orderNumber, req.params.orderNumber))
-    .limit(1);
-  if (!orderRows.length) {
+  const snap = await fdb()
+    .collection("orders")
+    .doc(req.params.orderNumber)
+    .get();
+  if (!snap.exists) {
     res.status(404).json({ error: "not_found" });
     return;
   }
-  const order = orderRows[0]!;
-  const items = await db
-    .select()
-    .from(orderItemsTable)
-    .where(eq(orderItemsTable.orderId, order.id));
-
-  res.json({
-    id: order.id,
-    orderNumber: order.orderNumber,
-    status: order.status,
-    customerName: order.customerName,
-    customerEmail: order.customerEmail,
-    customerPhone: order.customerPhone,
-    shippingAddress: order.shippingAddress,
-    city: order.city,
-    shippingMethod: order.shippingMethod,
-    paymentMethod: order.paymentMethod,
-    notes: order.notes ?? undefined,
-    subtotalCents: order.subtotalCents,
-    shippingCents: order.shippingCents,
-    totalCents: order.totalCents,
-    items: items.map((i) => ({
-      id: i.id,
-      variantId: i.variantId,
-      productId: i.productId,
-      productName: i.productName,
-      productSlug: i.productSlug,
-      brand: i.brand,
-      sizeMl: i.sizeMl,
-      imageUrl: i.imageUrl,
-      unitPriceCents: i.unitPriceCents,
-      quantity: i.quantity,
-      lineTotalCents: i.lineTotalCents,
-    })),
-    createdAt: order.createdAt.toISOString(),
-  });
+  res.json(serialize(snap.data() as OrderDoc));
 });
 
 export default router;

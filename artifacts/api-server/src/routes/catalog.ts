@@ -1,78 +1,95 @@
 import { Router, type IRouter } from "express";
-import { db } from "@workspace/db";
-import {
-  brandsTable,
-  productsTable,
-  variantsTable,
-} from "@workspace/db";
-import { eq, and, ilike, or, sql, desc, asc, min, count } from "drizzle-orm";
+import { fdb } from "../lib/firestore";
 
 const router: IRouter = Router();
 
-async function loadProductsWithVariants(
-  whereExpr?: ReturnType<typeof and>,
-  orderExpr?: ReturnType<typeof asc> | ReturnType<typeof desc>,
-) {
-  const rows = await db
-    .select({
-      id: productsTable.id,
-      slug: productsTable.slug,
-      name: productsTable.name,
-      gender: productsTable.gender,
-      family: productsTable.family,
-      imageUrl: productsTable.imageUrl,
-      isFeatured: productsTable.isFeatured,
-      isNew: productsTable.isNew,
-      popularity: productsTable.popularity,
-      brand: brandsTable.name,
-      brandSlug: brandsTable.slug,
-      fromPriceCents: min(variantsTable.priceCents),
-      sizesMl: sql<number[]>`array_agg(${variantsTable.sizeMl} order by ${variantsTable.sizeMl})`,
-    })
-    .from(productsTable)
-    .innerJoin(brandsTable, eq(productsTable.brandId, brandsTable.id))
-    .innerJoin(variantsTable, eq(variantsTable.productId, productsTable.id))
-    .where(whereExpr)
-    .groupBy(productsTable.id, brandsTable.id)
-    .orderBy(orderExpr ?? desc(productsTable.createdAt));
+type ProductDoc = {
+  id: number;
+  brandId: number;
+  brandName: string;
+  brandSlug: string;
+  slug: string;
+  name: string;
+  gender: string;
+  family: string;
+  description: string;
+  topNotes: string[];
+  heartNotes: string[];
+  baseNotes: string[];
+  longevity?: string | null;
+  sillage?: string | null;
+  imageUrl: string;
+  isFeatured: boolean;
+  isNew: boolean;
+  popularity: number;
+  createdAt: number;
+};
 
-  return rows.map((r) => ({
-    id: r.id,
-    slug: r.slug,
-    name: r.name,
-    brand: r.brand,
-    brandSlug: r.brandSlug,
-    gender: r.gender,
-    family: r.family,
-    imageUrl: r.imageUrl,
-    fromPriceCents: r.fromPriceCents ?? 0,
-    sizesMl: r.sizesMl ?? [],
-    isFeatured: r.isFeatured,
-    isNew: r.isNew,
-  }));
+type VariantDoc = {
+  id: number;
+  productId: number;
+  sizeMl: number;
+  priceCents: number;
+  stock: number;
+};
+
+type BrandDoc = {
+  id: number;
+  name: string;
+  slug: string;
+  country?: string | null;
+};
+
+async function loadAll() {
+  const [productsSnap, variantsSnap, brandsSnap] = await Promise.all([
+    fdb().collection("products").get(),
+    fdb().collection("variants").get(),
+    fdb().collection("brands").get(),
+  ]);
+  const products = productsSnap.docs.map((d) => d.data() as ProductDoc);
+  const variants = variantsSnap.docs.map((d) => d.data() as VariantDoc);
+  const brands = brandsSnap.docs.map((d) => d.data() as BrandDoc);
+  return { products, variants, brands };
+}
+
+function variantsForProduct(variants: VariantDoc[], productId: number) {
+  return variants
+    .filter((v) => v.productId === productId)
+    .sort((a, b) => a.sizeMl - b.sizeMl);
+}
+
+function toProductCard(p: ProductDoc, variants: VariantDoc[]) {
+  const vs = variantsForProduct(variants, p.id);
+  return {
+    id: p.id,
+    slug: p.slug,
+    name: p.name,
+    brand: p.brandName,
+    brandSlug: p.brandSlug,
+    gender: p.gender,
+    family: p.family,
+    imageUrl: p.imageUrl,
+    fromPriceCents: vs.length ? Math.min(...vs.map((v) => v.priceCents)) : 0,
+    sizesMl: vs.map((v) => v.sizeMl),
+    isFeatured: p.isFeatured,
+    isNew: p.isNew,
+  };
 }
 
 router.get("/brands", async (_req, res) => {
-  const rows = await db
-    .select({
-      id: brandsTable.id,
-      name: brandsTable.name,
-      slug: brandsTable.slug,
-      country: brandsTable.country,
-      productCount: count(productsTable.id),
-    })
-    .from(brandsTable)
-    .leftJoin(productsTable, eq(productsTable.brandId, brandsTable.id))
-    .groupBy(brandsTable.id)
-    .orderBy(asc(brandsTable.name));
+  const { products, brands } = await loadAll();
+  const productCount = (brandId: number) =>
+    products.filter((p) => p.brandId === brandId).length;
   res.json(
-    rows.map((r) => ({
-      id: r.id,
-      name: r.name,
-      slug: r.slug,
-      country: r.country ?? undefined,
-      productCount: Number(r.productCount),
-    })),
+    brands
+      .map((b) => ({
+        id: b.id,
+        name: b.name,
+        slug: b.slug,
+        country: b.country ?? undefined,
+        productCount: productCount(b.id),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
   );
 });
 
@@ -81,111 +98,116 @@ router.get("/products", async (req, res) => {
     string,
     string | undefined
   >;
-  const filters = [];
-  if (gender) filters.push(eq(productsTable.gender, gender));
-  if (family) filters.push(eq(productsTable.family, family));
-  if (brand) filters.push(eq(brandsTable.slug, brand));
+  const { products, variants } = await loadAll();
+  let filtered = products;
+  if (gender) filtered = filtered.filter((p) => p.gender === gender);
+  if (family) filtered = filtered.filter((p) => p.family === family);
+  if (brand) filtered = filtered.filter((p) => p.brandSlug === brand);
   if (search) {
-    filters.push(
-      or(
-        ilike(productsTable.name, `%${search}%`),
-        ilike(brandsTable.name, `%${search}%`),
-      )!,
+    const q = search.toLowerCase();
+    filtered = filtered.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.brandName.toLowerCase().includes(q),
     );
   }
-  const whereExpr = filters.length ? and(...filters) : undefined;
 
-  let orderExpr;
+  const cards = filtered.map((p) => toProductCard(p, variants));
   switch (sort) {
     case "price_asc":
-      orderExpr = asc(min(variantsTable.priceCents));
+      cards.sort((a, b) => a.fromPriceCents - b.fromPriceCents);
       break;
     case "price_desc":
-      orderExpr = desc(min(variantsTable.priceCents));
+      cards.sort((a, b) => b.fromPriceCents - a.fromPriceCents);
       break;
     case "popular":
-      orderExpr = desc(productsTable.popularity);
+      cards.sort(
+        (a, b) =>
+          (filtered.find((p) => p.id === b.id)?.popularity ?? 0) -
+          (filtered.find((p) => p.id === a.id)?.popularity ?? 0),
+      );
       break;
     case "newest":
     default:
-      orderExpr = desc(productsTable.createdAt);
+      cards.sort(
+        (a, b) =>
+          (filtered.find((p) => p.id === b.id)?.createdAt ?? 0) -
+          (filtered.find((p) => p.id === a.id)?.createdAt ?? 0),
+      );
   }
-
-  const products = await loadProductsWithVariants(whereExpr, orderExpr);
-  res.json(products);
+  res.json(cards);
 });
 
 router.get("/products/featured", async (_req, res) => {
-  const products = await loadProductsWithVariants(
-    eq(productsTable.isFeatured, true),
-    desc(productsTable.popularity),
-  );
-  res.json(products);
+  const { products, variants } = await loadAll();
+  const list = products
+    .filter((p) => p.isFeatured)
+    .sort((a, b) => b.popularity - a.popularity)
+    .map((p) => toProductCard(p, variants));
+  res.json(list);
 });
 
 router.get("/products/bestsellers", async (_req, res) => {
-  const products = await loadProductsWithVariants(
-    undefined,
-    desc(productsTable.popularity),
-  );
-  res.json(products.slice(0, 8));
+  const { products, variants } = await loadAll();
+  const list = products
+    .slice()
+    .sort((a, b) => b.popularity - a.popularity)
+    .slice(0, 8)
+    .map((p) => toProductCard(p, variants));
+  res.json(list);
 });
 
 router.get("/products/new-arrivals", async (_req, res) => {
-  const products = await loadProductsWithVariants(
-    eq(productsTable.isNew, true),
-    desc(productsTable.createdAt),
-  );
-  res.json(products);
+  const { products, variants } = await loadAll();
+  const list = products
+    .filter((p) => p.isNew)
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .map((p) => toProductCard(p, variants));
+  res.json(list);
 });
 
 router.get("/products/:slug", async (req, res) => {
   const slug = req.params.slug;
-  const productRow = await db
-    .select({
-      product: productsTable,
-      brand: brandsTable.name,
-      brandSlug: brandsTable.slug,
-    })
-    .from(productsTable)
-    .innerJoin(brandsTable, eq(productsTable.brandId, brandsTable.id))
-    .where(eq(productsTable.slug, slug))
-    .limit(1);
-
-  if (!productRow.length) {
+  const snap = await fdb()
+    .collection("products")
+    .where("slug", "==", slug)
+    .limit(1)
+    .get();
+  if (snap.empty) {
     res.status(404).json({ error: "not_found" });
     return;
   }
-  const { product, brand, brandSlug } = productRow[0]!;
-  const variants = await db
-    .select()
-    .from(variantsTable)
-    .where(eq(variantsTable.productId, product.id))
-    .orderBy(asc(variantsTable.sizeMl));
-
+  const p = snap.docs[0]!.data() as ProductDoc;
+  const variantsSnap = await fdb()
+    .collection("variants")
+    .where("productId", "==", p.id)
+    .get();
+  const variants = variantsSnap.docs
+    .map((d) => d.data() as VariantDoc)
+    .sort((a, b) => a.sizeMl - b.sizeMl);
   const fromPriceCents = variants.length
     ? Math.min(...variants.map((v) => v.priceCents))
     : 0;
 
   res.json({
-    id: product.id,
-    slug: product.slug,
-    name: product.name,
-    brand,
-    brandSlug,
-    gender: product.gender,
-    family: product.family,
-    imageUrl: product.imageUrl,
+    id: p.id,
+    slug: p.slug,
+    name: p.name,
+    brand: p.brandName,
+    brandSlug: p.brandSlug,
+    gender: p.gender,
+    family: p.family,
+    imageUrl: p.imageUrl,
     fromPriceCents,
     sizesMl: variants.map((v) => v.sizeMl),
-    isFeatured: product.isFeatured,
-    isNew: product.isNew,
-    description: product.description,
-    topNotes: product.topNotes,
-    heartNotes: product.heartNotes,
-    baseNotes: product.baseNotes,
-    longevity: product.longevity ?? undefined,
-    sillage: product.sillage ?? undefined,
+    isFeatured: p.isFeatured,
+    isNew: p.isNew,
+    description: p.description,
+    topNotes: p.topNotes,
+    heartNotes: p.heartNotes,
+    baseNotes: p.baseNotes,
+    longevity: p.longevity ?? undefined,
+    sillage: p.sillage ?? undefined,
     variants: variants.map((v) => ({
       id: v.id,
       sizeMl: v.sizeMl,
@@ -196,60 +218,36 @@ router.get("/products/:slug", async (req, res) => {
 });
 
 router.get("/catalog/summary", async (_req, res) => {
-  const [totalProductsRow] = await db
-    .select({ c: count() })
-    .from(productsTable);
-  const [totalBrandsRow] = await db.select({ c: count() }).from(brandsTable);
-
-  const byGender = await db
-    .select({
-      gender: productsTable.gender,
-      count: count(),
-    })
-    .from(productsTable)
-    .groupBy(productsTable.gender);
-
-  const byFamily = await db
-    .select({
-      family: productsTable.family,
-      count: count(),
-    })
-    .from(productsTable)
-    .groupBy(productsTable.family)
-    .orderBy(desc(count()));
-
-  const topBrandsRows = await db
-    .select({
-      id: brandsTable.id,
-      name: brandsTable.name,
-      slug: brandsTable.slug,
-      country: brandsTable.country,
-      productCount: count(productsTable.id),
-    })
-    .from(brandsTable)
-    .leftJoin(productsTable, eq(productsTable.brandId, brandsTable.id))
-    .groupBy(brandsTable.id)
-    .orderBy(desc(count(productsTable.id)))
-    .limit(8);
-
+  const { products, brands } = await loadAll();
+  const byGender: Record<string, number> = {};
+  const byFamily: Record<string, number> = {};
+  for (const p of products) {
+    byGender[p.gender] = (byGender[p.gender] ?? 0) + 1;
+    byFamily[p.family] = (byFamily[p.family] ?? 0) + 1;
+  }
+  const productCount = (brandId: number) =>
+    products.filter((p) => p.brandId === brandId).length;
+  const topBrands = brands
+    .map((b) => ({
+      id: b.id,
+      name: b.name,
+      slug: b.slug,
+      country: b.country ?? undefined,
+      productCount: productCount(b.id),
+    }))
+    .sort((a, b) => b.productCount - a.productCount)
+    .slice(0, 8);
   res.json({
-    totalProducts: Number(totalProductsRow?.c ?? 0),
-    totalBrands: Number(totalBrandsRow?.c ?? 0),
-    byGender: byGender.map((r) => ({
-      gender: r.gender,
-      count: Number(r.count),
+    totalProducts: products.length,
+    totalBrands: brands.length,
+    byGender: Object.entries(byGender).map(([gender, count]) => ({
+      gender,
+      count,
     })),
-    byFamily: byFamily.map((r) => ({
-      family: r.family,
-      count: Number(r.count),
-    })),
-    topBrands: topBrandsRows.map((r) => ({
-      id: r.id,
-      name: r.name,
-      slug: r.slug,
-      country: r.country ?? undefined,
-      productCount: Number(r.productCount),
-    })),
+    byFamily: Object.entries(byFamily)
+      .map(([family, count]) => ({ family, count }))
+      .sort((a, b) => b.count - a.count),
+    topBrands,
   });
 });
 
