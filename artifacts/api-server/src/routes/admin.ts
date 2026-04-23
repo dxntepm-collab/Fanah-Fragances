@@ -1,13 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db } from "@workspace/db";
-import {
-  brandsTable,
-  productsTable,
-  variantsTable,
-  ordersTable,
-  orderItemsTable,
-} from "@workspace/db";
-import { eq, desc, asc, count } from "drizzle-orm";
+import { fdb, genId } from "../lib/firestore";
 import {
   isAdminPassword,
   setAdminCookie,
@@ -17,6 +9,59 @@ import {
 } from "../lib/admin-auth";
 
 const router: IRouter = Router();
+
+type BrandDoc = {
+  id: number;
+  name: string;
+  slug: string;
+  country?: string | null;
+};
+type ProductDoc = {
+  id: number;
+  brandId: number;
+  brandName: string;
+  brandSlug: string;
+  slug: string;
+  name: string;
+  gender: string;
+  family: string;
+  description: string;
+  topNotes: string[];
+  heartNotes: string[];
+  baseNotes: string[];
+  longevity?: string | null;
+  sillage?: string | null;
+  imageUrl: string;
+  isFeatured: boolean;
+  isNew: boolean;
+  popularity: number;
+  createdAt: number;
+};
+type VariantDoc = {
+  id: number;
+  productId: number;
+  sizeMl: number;
+  priceCents: number;
+  stock: number;
+};
+type OrderDoc = {
+  id: number;
+  orderNumber: string;
+  status: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  shippingAddress: string;
+  city: string;
+  shippingMethod: string;
+  paymentMethod: string;
+  notes: string | null;
+  subtotalCents: number;
+  shippingCents: number;
+  totalCents: number;
+  items: unknown[];
+  createdAt: number;
+};
 
 router.post("/admin/login", (req, res) => {
   const { password } = (req.body ?? {}) as { password?: string };
@@ -39,68 +84,66 @@ router.get("/admin/session", (req, res) => {
 
 router.use("/admin", requireAdmin);
 
-router.get("/admin/dashboard", async (_req, res) => {
-  const [{ c: totalProducts } = { c: 0 }] = await db
-    .select({ c: count() })
-    .from(productsTable);
-  const [{ c: totalBrands } = { c: 0 }] = await db
-    .select({ c: count() })
-    .from(brandsTable);
-  const [{ c: totalOrders } = { c: 0 }] = await db
-    .select({ c: count() })
-    .from(ordersTable);
-  const ordersByStatus = await db
-    .select({ status: ordersTable.status, c: count() })
-    .from(ordersTable)
-    .groupBy(ordersTable.status);
-  const recentOrders = await db
-    .select()
-    .from(ordersTable)
-    .orderBy(desc(ordersTable.createdAt))
-    .limit(5);
+async function findDocByIntId(collection: string, id: number) {
+  const snap = await fdb()
+    .collection(collection)
+    .where("id", "==", id)
+    .limit(1)
+    .get();
+  return snap.empty ? null : snap.docs[0]!;
+}
 
-  res.json({
-    totals: {
-      products: Number(totalProducts),
-      brands: Number(totalBrands),
-      orders: Number(totalOrders),
-    },
-    ordersByStatus: ordersByStatus.map((r) => ({
-      status: r.status,
-      count: Number(r.c),
-    })),
-    recentOrders: recentOrders.map((o) => ({
+router.get("/admin/dashboard", async (_req, res) => {
+  const [productsSnap, brandsSnap, ordersSnap] = await Promise.all([
+    fdb().collection("products").get(),
+    fdb().collection("brands").get(),
+    fdb().collection("orders").get(),
+  ]);
+  const orders = ordersSnap.docs.map((d) => d.data() as OrderDoc);
+  const byStatus: Record<string, number> = {};
+  for (const o of orders) byStatus[o.status] = (byStatus[o.status] ?? 0) + 1;
+  const recent = orders
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, 5)
+    .map((o) => ({
       id: o.id,
       orderNumber: o.orderNumber,
       status: o.status,
       customerName: o.customerName,
       totalCents: o.totalCents,
-      createdAt: o.createdAt.toISOString(),
+      createdAt: new Date(o.createdAt).toISOString(),
+    }));
+  res.json({
+    totals: {
+      products: productsSnap.size,
+      brands: brandsSnap.size,
+      orders: ordersSnap.size,
+    },
+    ordersByStatus: Object.entries(byStatus).map(([status, count]) => ({
+      status,
+      count,
     })),
+    recentOrders: recent,
   });
 });
 
 router.get("/admin/brands", async (_req, res) => {
-  const rows = await db
-    .select({
-      id: brandsTable.id,
-      name: brandsTable.name,
-      slug: brandsTable.slug,
-      country: brandsTable.country,
-      productCount: count(productsTable.id),
-    })
-    .from(brandsTable)
-    .leftJoin(productsTable, eq(productsTable.brandId, brandsTable.id))
-    .groupBy(brandsTable.id)
-    .orderBy(asc(brandsTable.name));
+  const [brandsSnap, productsSnap] = await Promise.all([
+    fdb().collection("brands").get(),
+    fdb().collection("products").get(),
+  ]);
+  const brands = brandsSnap.docs.map((d) => d.data() as BrandDoc);
+  const products = productsSnap.docs.map((d) => d.data() as ProductDoc);
   res.json(
-    rows.map((r) => ({
-      id: r.id,
-      name: r.name,
-      slug: r.slug,
-      country: r.country ?? null,
-      productCount: Number(r.productCount),
-    })),
+    brands
+      .map((b) => ({
+        id: b.id,
+        name: b.name,
+        slug: b.slug,
+        country: b.country ?? null,
+        productCount: products.filter((p) => p.brandId === b.id).length,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
   );
 });
 
@@ -110,86 +153,108 @@ router.post("/admin/brands", async (req, res) => {
     res.status(400).json({ error: "missing_fields" });
     return;
   }
-  const [b] = await db
-    .insert(brandsTable)
-    .values({ name, slug, country: country || null })
-    .returning();
-  res.json(b);
+  const brand: BrandDoc = {
+    id: genId(),
+    name,
+    slug,
+    country: country || null,
+  };
+  await fdb().collection("brands").doc(String(brand.id)).set(brand);
+  res.json(brand);
 });
 
 router.patch("/admin/brands/:id", async (req, res) => {
   const id = Number(req.params.id);
   const { name, slug, country } = (req.body ?? {}) as Record<string, string>;
-  const update: Record<string, unknown> = {};
+  const doc = await findDocByIntId("brands", id);
+  if (!doc) {
+    res.status(404).json({ error: "not_found" });
+    return;
+  }
+  const update: Partial<BrandDoc> = {};
   if (name !== undefined) update.name = name;
   if (slug !== undefined) update.slug = slug;
   if (country !== undefined) update.country = country || null;
-  const [b] = await db
-    .update(brandsTable)
-    .set(update)
-    .where(eq(brandsTable.id, id))
-    .returning();
-  res.json(b);
+  await doc.ref.update(update);
+
+  if (update.name || update.slug) {
+    const productsSnap = await fdb()
+      .collection("products")
+      .where("brandId", "==", id)
+      .get();
+    const batch = fdb().batch();
+    productsSnap.docs.forEach((d) => {
+      const u: Record<string, string> = {};
+      if (update.name) u.brandName = update.name;
+      if (update.slug) u.brandSlug = update.slug;
+      batch.update(d.ref, u);
+    });
+    await batch.commit();
+  }
+
+  const updated = (await doc.ref.get()).data();
+  res.json(updated);
 });
 
 router.delete("/admin/brands/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const [{ c } = { c: 0 }] = await db
-    .select({ c: count() })
-    .from(productsTable)
-    .where(eq(productsTable.brandId, id));
-  if (Number(c) > 0) {
+  const productsSnap = await fdb()
+    .collection("products")
+    .where("brandId", "==", id)
+    .limit(1)
+    .get();
+  if (!productsSnap.empty) {
     res.status(400).json({ error: "brand_has_products" });
     return;
   }
-  await db.delete(brandsTable).where(eq(brandsTable.id, id));
+  const doc = await findDocByIntId("brands", id);
+  if (doc) await doc.ref.delete();
   res.json({ ok: true });
 });
 
 router.get("/admin/products", async (_req, res) => {
-  const rows = await db
-    .select({
-      id: productsTable.id,
-      slug: productsTable.slug,
-      name: productsTable.name,
-      gender: productsTable.gender,
-      family: productsTable.family,
-      imageUrl: productsTable.imageUrl,
-      isFeatured: productsTable.isFeatured,
-      isNew: productsTable.isNew,
-      popularity: productsTable.popularity,
-      brandId: productsTable.brandId,
-      brand: brandsTable.name,
-      createdAt: productsTable.createdAt,
-    })
-    .from(productsTable)
-    .innerJoin(brandsTable, eq(productsTable.brandId, brandsTable.id))
-    .orderBy(desc(productsTable.createdAt));
+  const snap = await fdb().collection("products").get();
+  const products = snap.docs
+    .map((d) => d.data() as ProductDoc)
+    .sort((a, b) => b.createdAt - a.createdAt);
   res.json(
-    rows.map((r) => ({
-      ...r,
-      createdAt: r.createdAt.toISOString(),
+    products.map((p) => ({
+      id: p.id,
+      slug: p.slug,
+      name: p.name,
+      gender: p.gender,
+      family: p.family,
+      imageUrl: p.imageUrl,
+      isFeatured: p.isFeatured,
+      isNew: p.isNew,
+      popularity: p.popularity,
+      brandId: p.brandId,
+      brand: p.brandName,
+      createdAt: new Date(p.createdAt).toISOString(),
     })),
   );
 });
 
 router.get("/admin/products/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const [p] = await db
-    .select()
-    .from(productsTable)
-    .where(eq(productsTable.id, id))
-    .limit(1);
-  if (!p) {
+  const doc = await findDocByIntId("products", id);
+  if (!doc) {
     res.status(404).json({ error: "not_found" });
     return;
   }
-  const variants = await db
-    .select()
-    .from(variantsTable)
-    .where(eq(variantsTable.productId, id))
-    .orderBy(asc(variantsTable.sizeMl));
-  res.json({ ...p, createdAt: p.createdAt.toISOString(), variants });
+  const p = doc.data() as ProductDoc;
+  const variantsSnap = await fdb()
+    .collection("variants")
+    .where("productId", "==", id)
+    .get();
+  const variants = variantsSnap.docs
+    .map((d) => d.data() as VariantDoc)
+    .sort((a, b) => a.sizeMl - b.sizeMl);
+  res.json({
+    ...p,
+    createdAt: new Date(p.createdAt).toISOString(),
+    variants,
+  });
 });
 
 router.post("/admin/products", async (req, res) => {
@@ -198,31 +263,44 @@ router.post("/admin/products", async (req, res) => {
     res.status(400).json({ error: "missing_fields" });
     return;
   }
-  const [p] = await db
-    .insert(productsTable)
-    .values({
-      brandId: Number(body.brandId),
-      slug: String(body.slug),
-      name: String(body.name),
-      gender: String(body.gender ?? "unisex"),
-      family: String(body.family ?? "Oriental"),
-      description: String(body.description ?? ""),
-      topNotes: (body.topNotes as string[]) ?? [],
-      heartNotes: (body.heartNotes as string[]) ?? [],
-      baseNotes: (body.baseNotes as string[]) ?? [],
-      longevity: (body.longevity as string) ?? null,
-      sillage: (body.sillage as string) ?? null,
-      imageUrl: String(body.imageUrl ?? ""),
-      isFeatured: Boolean(body.isFeatured),
-      isNew: Boolean(body.isNew),
-      popularity: Number(body.popularity ?? 0),
-    })
-    .returning();
-  res.json(p);
+  const brandDoc = await findDocByIntId("brands", Number(body.brandId));
+  if (!brandDoc) {
+    res.status(400).json({ error: "brand_not_found" });
+    return;
+  }
+  const brand = brandDoc.data() as BrandDoc;
+  const product: ProductDoc = {
+    id: genId(),
+    brandId: brand.id,
+    brandName: brand.name,
+    brandSlug: brand.slug,
+    slug: String(body.slug),
+    name: String(body.name),
+    gender: String(body.gender ?? "unisex"),
+    family: String(body.family ?? "Oriental"),
+    description: String(body.description ?? ""),
+    topNotes: (body.topNotes as string[]) ?? [],
+    heartNotes: (body.heartNotes as string[]) ?? [],
+    baseNotes: (body.baseNotes as string[]) ?? [],
+    longevity: (body.longevity as string) ?? null,
+    sillage: (body.sillage as string) ?? null,
+    imageUrl: String(body.imageUrl ?? ""),
+    isFeatured: Boolean(body.isFeatured),
+    isNew: Boolean(body.isNew),
+    popularity: Number(body.popularity ?? 0),
+    createdAt: Date.now(),
+  };
+  await fdb().collection("products").doc(String(product.id)).set(product);
+  res.json(product);
 });
 
 router.patch("/admin/products/:id", async (req, res) => {
   const id = Number(req.params.id);
+  const doc = await findDocByIntId("products", id);
+  if (!doc) {
+    res.status(404).json({ error: "not_found" });
+    return;
+  }
   const body = (req.body ?? {}) as Record<string, unknown>;
   const update: Record<string, unknown> = {};
   for (const k of [
@@ -237,26 +315,41 @@ router.patch("/admin/products/:id", async (req, res) => {
   ]) {
     if (body[k] !== undefined) update[k] = body[k];
   }
-  if (body.brandId !== undefined) update.brandId = Number(body.brandId);
+  if (body.brandId !== undefined) {
+    const bDoc = await findDocByIntId("brands", Number(body.brandId));
+    if (!bDoc) {
+      res.status(400).json({ error: "brand_not_found" });
+      return;
+    }
+    const b = bDoc.data() as BrandDoc;
+    update.brandId = b.id;
+    update.brandName = b.name;
+    update.brandSlug = b.slug;
+  }
   if (body.popularity !== undefined)
     update.popularity = Number(body.popularity);
-  if (body.isFeatured !== undefined) update.isFeatured = Boolean(body.isFeatured);
+  if (body.isFeatured !== undefined)
+    update.isFeatured = Boolean(body.isFeatured);
   if (body.isNew !== undefined) update.isNew = Boolean(body.isNew);
   for (const k of ["topNotes", "heartNotes", "baseNotes"]) {
     if (Array.isArray(body[k])) update[k] = body[k];
   }
-  const [p] = await db
-    .update(productsTable)
-    .set(update)
-    .where(eq(productsTable.id, id))
-    .returning();
-  res.json(p);
+  await doc.ref.update(update);
+  const updated = (await doc.ref.get()).data();
+  res.json(updated);
 });
 
 router.delete("/admin/products/:id", async (req, res) => {
   const id = Number(req.params.id);
-  await db.delete(variantsTable).where(eq(variantsTable.productId, id));
-  await db.delete(productsTable).where(eq(productsTable.id, id));
+  const variantsSnap = await fdb()
+    .collection("variants")
+    .where("productId", "==", id)
+    .get();
+  const batch = fdb().batch();
+  variantsSnap.docs.forEach((d) => batch.delete(d.ref));
+  await batch.commit();
+  const doc = await findDocByIntId("products", id);
+  if (doc) await doc.ref.delete();
   res.json({ ok: true });
 });
 
@@ -270,49 +363,50 @@ router.post("/admin/products/:id/variants", async (req, res) => {
     res.status(400).json({ error: "missing_fields" });
     return;
   }
-  const [v] = await db
-    .insert(variantsTable)
-    .values({
-      productId,
-      sizeMl: Number(sizeMl),
-      priceCents: Number(priceCents),
-      stock: Number(stock ?? 50),
-    })
-    .returning();
-  res.json(v);
+  const variant: VariantDoc = {
+    id: genId(),
+    productId,
+    sizeMl: Number(sizeMl),
+    priceCents: Number(priceCents),
+    stock: Number(stock ?? 50),
+  };
+  await fdb().collection("variants").doc(String(variant.id)).set(variant);
+  res.json(variant);
 });
 
 router.patch("/admin/variants/:id", async (req, res) => {
   const id = Number(req.params.id);
+  const doc = await findDocByIntId("variants", id);
+  if (!doc) {
+    res.status(404).json({ error: "not_found" });
+    return;
+  }
   const { sizeMl, priceCents, stock } = (req.body ?? {}) as Record<
     string,
     number
   >;
-  const update: Record<string, unknown> = {};
+  const update: Record<string, number> = {};
   if (sizeMl !== undefined) update.sizeMl = Number(sizeMl);
   if (priceCents !== undefined) update.priceCents = Number(priceCents);
   if (stock !== undefined) update.stock = Number(stock);
-  const [v] = await db
-    .update(variantsTable)
-    .set(update)
-    .where(eq(variantsTable.id, id))
-    .returning();
-  res.json(v);
+  await doc.ref.update(update);
+  res.json((await doc.ref.get()).data());
 });
 
 router.delete("/admin/variants/:id", async (req, res) => {
   const id = Number(req.params.id);
-  await db.delete(variantsTable).where(eq(variantsTable.id, id));
+  const doc = await findDocByIntId("variants", id);
+  if (doc) await doc.ref.delete();
   res.json({ ok: true });
 });
 
 router.get("/admin/orders", async (_req, res) => {
-  const rows = await db
-    .select()
-    .from(ordersTable)
-    .orderBy(desc(ordersTable.createdAt));
+  const snap = await fdb().collection("orders").get();
+  const orders = snap.docs
+    .map((d) => d.data() as OrderDoc)
+    .sort((a, b) => b.createdAt - a.createdAt);
   res.json(
-    rows.map((o) => ({
+    orders.map((o) => ({
       id: o.id,
       orderNumber: o.orderNumber,
       status: o.status,
@@ -323,27 +417,20 @@ router.get("/admin/orders", async (_req, res) => {
       shippingMethod: o.shippingMethod,
       paymentMethod: o.paymentMethod,
       totalCents: o.totalCents,
-      createdAt: o.createdAt.toISOString(),
+      createdAt: new Date(o.createdAt).toISOString(),
     })),
   );
 });
 
 router.get("/admin/orders/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const [o] = await db
-    .select()
-    .from(ordersTable)
-    .where(eq(ordersTable.id, id))
-    .limit(1);
-  if (!o) {
+  const doc = await findDocByIntId("orders", id);
+  if (!doc) {
     res.status(404).json({ error: "not_found" });
     return;
   }
-  const items = await db
-    .select()
-    .from(orderItemsTable)
-    .where(eq(orderItemsTable.orderId, o.id));
-  res.json({ ...o, createdAt: o.createdAt.toISOString(), items });
+  const o = doc.data() as OrderDoc;
+  res.json({ ...o, createdAt: new Date(o.createdAt).toISOString() });
 });
 
 router.patch("/admin/orders/:id", async (req, res) => {
@@ -353,12 +440,14 @@ router.patch("/admin/orders/:id", async (req, res) => {
     res.status(400).json({ error: "missing_status" });
     return;
   }
-  const [o] = await db
-    .update(ordersTable)
-    .set({ status })
-    .where(eq(ordersTable.id, id))
-    .returning();
-  res.json(o);
+  const doc = await findDocByIntId("orders", id);
+  if (!doc) {
+    res.status(404).json({ error: "not_found" });
+    return;
+  }
+  await doc.ref.update({ status });
+  const o = (await doc.ref.get()).data() as OrderDoc;
+  res.json({ ...o, createdAt: new Date(o.createdAt).toISOString() });
 });
 
 export default router;
