@@ -12,23 +12,41 @@ import Brands from "@/pages/brands";
 import CartPage from "@/pages/cart";
 import Checkout from "@/pages/checkout";
 import OrderConfirmation from "@/pages/order-confirmation";
+import AdminLogin from "@/pages/admin/login";
+import AdminDashboard from "@/pages/admin/dashboard";
+import AdminProducts from "@/pages/admin/products";
+import AdminProductEdit from "@/pages/admin/product-edit";
+import AdminBrands from "@/pages/admin/brands";
+import AdminOrders from "@/pages/admin/orders";
+import AdminOrderDetail from "@/pages/admin/order-detail";
 
 const queryClient = new QueryClient();
 
 function Router() {
   return (
-    <Layout>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/catalogo" component={Catalog} />
-        <Route path="/marcas" component={Brands} />
-        <Route path="/carrito" component={CartPage} />
-        <Route path="/checkout" component={Checkout} />
-        <Route path="/perfume/:slug" component={ProductDetail} />
-        <Route path="/pedido/:orderNumber" component={OrderConfirmation} />
-        <Route component={NotFound} />
-      </Switch>
-    </Layout>
+    <Switch>
+      <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/productos" component={AdminProducts} />
+      <Route path="/admin/productos/:id" component={AdminProductEdit} />
+      <Route path="/admin/marcas" component={AdminBrands} />
+      <Route path="/admin/pedidos" component={AdminOrders} />
+      <Route path="/admin/pedidos/:id" component={AdminOrderDetail} />
+      <Route>
+        <Layout>
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route path="/catalogo" component={Catalog} />
+            <Route path="/marcas" component={Brands} />
+            <Route path="/carrito" component={CartPage} />
+            <Route path="/checkout" component={Checkout} />
+            <Route path="/perfume/:slug" component={ProductDetail} />
+            <Route path="/pedido/:orderNumber" component={OrderConfirmation} />
+            <Route component={NotFound} />
+          </Switch>
+        </Layout>
+      </Route>
+    </Switch>
   );
 }
 
