@@ -1,22 +1,22 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: FANAH Fragrances Decants Shop API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: catalog
+  - name: cart
+  - name: orders
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +24,276 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /brands:
+    get:
+      operationId: listBrands
+      tags: [catalog]
+      summary: List all perfume brands
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Brand"
+
+  /products:
+    get:
+      operationId: listProducts
+      tags: [catalog]
+      summary: List perfumes with filters
+      parameters:
+        - in: query
+          name: gender
+          schema:
+            type: string
+            enum: [men, women, unisex]
+        - in: query
+          name: brand
+          schema:
+            type: string
+        - in: query
+          name: family
+          schema:
+            type: string
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [newest, price_asc, price_desc, popular]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /products/featured:
+    get:
+      operationId: listFeaturedProducts
+      tags: [catalog]
+      summary: Featured / hero products for homepage
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /products/bestsellers:
+    get:
+      operationId: listBestsellers
+      tags: [catalog]
+      summary: Best selling perfumes
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /products/new-arrivals:
+    get:
+      operationId: listNewArrivals
+      tags: [catalog]
+      summary: Newly added perfumes
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /products/{slug}:
+    get:
+      operationId: getProductBySlug
+      tags: [catalog]
+      summary: Get a single perfume with all decant sizes
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDetail"
+        "404":
+          description: Not found
+
+  /catalog/summary:
+    get:
+      operationId: getCatalogSummary
+      tags: [catalog]
+      summary: Catalog stats — totals by gender, family, brand counts
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogSummary"
+
+  /cart:
+    get:
+      operationId: getCart
+      tags: [cart]
+      summary: Get current session cart
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+    delete:
+      operationId: clearCart
+      tags: [cart]
+      summary: Empty the cart
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+
+  /cart/items:
+    post:
+      operationId: addCartItem
+      tags: [cart]
+      summary: Add a decant variant to the cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [variantId, quantity]
+              properties:
+                variantId:
+                  type: integer
+                quantity:
+                  type: integer
+                  minimum: 1
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+
+  /cart/items/{itemId}:
+    patch:
+      operationId: updateCartItem
+      tags: [cart]
+      summary: Update quantity of a cart line
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quantity]
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 1
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+    delete:
+      operationId: removeCartItem
+      tags: [cart]
+      summary: Remove a line from the cart
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+
+  /orders:
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Place an order from the current cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /orders/{orderNumber}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      summary: Get an order by its order number
+      parameters:
+        - in: path
+          name: orderNumber
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Not found
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +301,237 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    Brand:
+      type: object
+      required: [id, name, slug, productCount]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        country:
+          type: string
+        productCount:
+          type: integer
+
+    DecantVariant:
+      type: object
+      required: [id, sizeMl, priceCents, stock]
+      properties:
+        id:
+          type: integer
+        sizeMl:
+          type: integer
+        priceCents:
+          type: integer
+        stock:
+          type: integer
+
+    Product:
+      type: object
+      required:
+        - id
+        - slug
+        - name
+        - brand
+        - gender
+        - family
+        - imageUrl
+        - fromPriceCents
+        - sizesMl
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        brand:
+          type: string
+        brandSlug:
+          type: string
+        gender:
+          type: string
+          enum: [men, women, unisex]
+        family:
+          type: string
+        imageUrl:
+          type: string
+        fromPriceCents:
+          type: integer
+        sizesMl:
+          type: array
+          items:
+            type: integer
+        isFeatured:
+          type: boolean
+        isNew:
+          type: boolean
+
+    ProductDetail:
+      allOf:
+        - $ref: "#/components/schemas/Product"
+        - type: object
+          required: [description, topNotes, heartNotes, baseNotes, variants]
+          properties:
+            description:
+              type: string
+            topNotes:
+              type: array
+              items:
+                type: string
+            heartNotes:
+              type: array
+              items:
+                type: string
+            baseNotes:
+              type: array
+              items:
+                type: string
+            longevity:
+              type: string
+            sillage:
+              type: string
+            variants:
+              type: array
+              items:
+                $ref: "#/components/schemas/DecantVariant"
+
+    CatalogSummary:
+      type: object
+      required: [totalProducts, totalBrands, byGender, byFamily, topBrands]
+      properties:
+        totalProducts:
+          type: integer
+        totalBrands:
+          type: integer
+        byGender:
+          type: array
+          items:
+            type: object
+            required: [gender, count]
+            properties:
+              gender:
+                type: string
+              count:
+                type: integer
+        byFamily:
+          type: array
+          items:
+            type: object
+            required: [family, count]
+            properties:
+              family:
+                type: string
+              count:
+                type: integer
+        topBrands:
+          type: array
+          items:
+            $ref: "#/components/schemas/Brand"
+
+    CartItem:
+      type: object
+      required: [id, variantId, productId, productName, productSlug, brand, sizeMl, imageUrl, unitPriceCents, quantity, lineTotalCents]
+      properties:
+        id:
+          type: integer
+        variantId:
+          type: integer
+        productId:
+          type: integer
+        productName:
+          type: string
+        productSlug:
+          type: string
+        brand:
+          type: string
+        sizeMl:
+          type: integer
+        imageUrl:
+          type: string
+        unitPriceCents:
+          type: integer
+        quantity:
+          type: integer
+        lineTotalCents:
+          type: integer
+
+    Cart:
+      type: object
+      required: [items, subtotalCents, itemCount]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CartItem"
+        subtotalCents:
+          type: integer
+        itemCount:
+          type: integer
+
+    CreateOrderBody:
+      type: object
+      required: [customerName, customerEmail, customerPhone, shippingAddress, city, shippingMethod, paymentMethod]
+      properties:
+        customerName:
+          type: string
+        customerEmail:
+          type: string
+        customerPhone:
+          type: string
+        shippingAddress:
+          type: string
+        city:
+          type: string
+        shippingMethod:
+          type: string
+          enum: [delivery_lima, shipping_provincia, pickup]
+        paymentMethod:
+          type: string
+          enum: [yape, plin, transfer, cash_on_delivery]
+        notes:
+          type: string
+
+    Order:
+      type: object
+      required: [id, orderNumber, status, customerName, customerEmail, customerPhone, shippingAddress, city, shippingMethod, paymentMethod, subtotalCents, shippingCents, totalCents, items, createdAt]
+      properties:
+        id:
+          type: integer
+        orderNumber:
+          type: string
+        status:
+          type: string
+        customerName:
+          type: string
+        customerEmail:
+          type: string
+        customerPhone:
+          type: string
+        shippingAddress:
+          type: string
+        city:
+          type: string
+        shippingMethod:
+          type: string
+        paymentMethod:
+          type: string
+        notes:
+          type: string
+        subtotalCents:
+          type: integer
+        shippingCents:
+          type: integer
+        totalCents:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CartItem"
+        createdAt:
+          type: string

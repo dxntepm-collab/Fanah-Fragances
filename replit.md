@@ -1,27 +1,42 @@
-# Workspace
+# FANAH Fragrances — Decants Shop
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+E-commerce de venta de decants (muestras) de perfumes de lujo y nicho en Lima, Perú. Marca: FANAH FRAGRANCES (negro, dorado y plata). Toda la UI en español.
 
 ## Stack
 
-- **Monorepo tool**: pnpm workspaces
-- **Node.js version**: 24
-- **Package manager**: pnpm
-- **TypeScript version**: 5.9
-- **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+- **Monorepo**: pnpm workspaces, TypeScript 5.9, Node 24
+- **Frontend**: React + Vite + Tailwind v4, wouter, TanStack Query (`artifacts/decants-shop`)
+- **API**: Express 5 (`artifacts/api-server`) — sesión por cookie para el carrito
+- **DB**: PostgreSQL + Drizzle ORM (`lib/db`)
+- **Codegen**: Orval desde `lib/api-spec/openapi.yaml`
 
-## Key Commands
+## Modelo de datos
 
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- `pnpm --filter @workspace/api-server run dev` — run API server locally
+- `brands` — marcas
+- `products` — perfumes (con descripción, notas top/heart/base, longevidad, sillage)
+- `decant_variants` — tamaños 5/10/30 ml por perfume
+- `carts` + `cart_items` — carrito por sesión
+- `orders` + `order_items` — pedidos con métodos de envío y pago
 
-See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+## Endpoints clave (`/api`)
+
+- Catálogo: `/brands`, `/products` (filtros), `/products/featured|bestsellers|new-arrivals`, `/products/:slug`, `/catalog/summary`
+- Carrito: `GET/DELETE /cart`, `POST /cart/items`, `PATCH/DELETE /cart/items/:id`
+- Pedidos: `POST /orders`, `GET /orders/:orderNumber`
+
+## Comandos
+
+- `pnpm run typecheck` — typecheck completo
+- `pnpm --filter @workspace/api-spec run codegen` — regenerar hooks/schemas
+- `pnpm --filter @workspace/db run push` — push schema a DB
+- `pnpm --filter @workspace/scripts run seed` — sembrar marcas y perfumes demo
+
+## Notas
+
+- Las imágenes de productos están en `artifacts/decants-shop/public/products/`.
+- El logo está en `artifacts/decants-shop/public/fanah-logo.png`.
+- Métodos de envío: delivery Lima, envío a provincia, recojo en tienda.
+- Métodos de pago: Yape, Plin, transferencia, contraentrega.
+- Precios en céntimos de PEN (S/.).
