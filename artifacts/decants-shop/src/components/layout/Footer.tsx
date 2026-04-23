@@ -25,7 +25,7 @@ export function Footer() {
           <div>
             <h4 className="font-serif text-xl mb-6 text-foreground">Contacto</h4>
             <ul className="flex flex-col gap-3 text-muted-foreground text-sm mb-6">
-              <li>Miraflores, Lima, Perú</li>
+              <li>Piura, Piura, Perú</li>
               <li><a href="mailto:hola@fanahfragrances.com" className="hover:text-primary transition-colors">hola@fanahfragrances.com</a></li>
             </ul>
             <div className="flex gap-4">
