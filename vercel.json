@@ -1,27 +1,15 @@
 {
-  "version": 2,
-  "installCommand": "corepack enable && corepack prepare pnpm@10.28.0 --activate && pnpm install",
-  "builds": [
+  "buildCommand": "pnpm build",
+  "outputDirectory": "artifacts/decants-shop/dist/public",
+  "installCommand": "pnpm install --no-frozen-lockfile",
+  "rewrites": [
     {
-      "src": "artifacts/api-server/dist/index.mjs",
-      "use": "@vercel/node"
+      "source": "/api/(.*)",
+      "destination": "/artifacts/api-server/dist/index.mjs"
     },
     {
-      "src": "artifacts/decants-shop/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist/public"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "artifacts/api-server/dist/index.mjs"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "artifacts/decants-shop/dist/public/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
