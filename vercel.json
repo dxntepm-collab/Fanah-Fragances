@@ -1,6 +1,26 @@
 {
-  "framework": "vite",
-  "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm -C artifacts/decants-shop build",
-  "outputDirectory": "artifacts/decants-shop/dist/public"
+  "version": 2,
+  "builds": [
+    {
+      "src": "artifacts/api-server/dist/index.mjs",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "artifacts/decants-shop/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist/public"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "artifacts/api-server/dist/index.mjs"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "artifacts/decants-shop/dist/public/$1"
+    }
+  ]
 }
