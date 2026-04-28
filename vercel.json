@@ -1,0 +1,10 @@
+{
+  "buildCommand": "pnpm install && pnpm build",
+  "outputDirectory": "artifacts/decants-shop/dist",
+  "installCommand": "pnpm install",
+  "env": {
+    "PORT": "3000",
+    "BASE_PATH": "/"
+  },
+  "regions": ["iad1"]
+}

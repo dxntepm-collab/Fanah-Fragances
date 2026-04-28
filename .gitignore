@@ -54,5 +54,4 @@ Thumbs.db
 .env.*.local
 *.pem
 *.key
-*.json
 attached_assets/
