@@ -1,6 +1,6 @@
 {
-  "buildCommand": "pnpm build",
-  "outputDirectory": "dist",
+  "buildCommand": "pnpm -C artifacts/decants-shop build",
+  "outputDirectory": "artifacts/decants-shop/dist",
   "installCommand": "pnpm install",
   "env": {
     "PORT": "3000",
