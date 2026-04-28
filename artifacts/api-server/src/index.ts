@@ -4,8 +4,13 @@ import { fileURLToPath } from "url";
 
 // Load environment variables from .env.local (if it exists in development)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const envPath = path.resolve(__dirname, "../.env.local");
-dotenv.config({ path: envPath, override: true });
+
+dotenv.config();
+
+dotenv.config({
+  path: path.resolve(__dirname, "../.env.local"),
+  override: true,
+});
 
 import app from "./app";
 import { logger } from "./lib/logger";
