@@ -1,7 +1,7 @@
 {
   "buildCommand": "pnpm build",
-  "outputDirectory": "artifacts/decants-shop/dist/public",
   "installCommand": "pnpm install --no-frozen-lockfile",
+  "outputDirectory": "artifacts/decants-shop/dist/public",
   "rewrites": [
     {
       "source": "/api/(.*)",
