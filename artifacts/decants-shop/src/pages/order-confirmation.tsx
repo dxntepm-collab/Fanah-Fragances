@@ -88,7 +88,7 @@ export default function OrderConfirmation() {
                 <p className="mb-2">Realiza la transferencia por <strong>{formatPrice(order.totalCents)}</strong> a la siguiente cuenta BCP:</p>
                 <p className="font-mono mb-1">Cuenta: 194-12345678-0-99</p>
                 <p className="font-mono mb-3">CCI: 002-194-12345678099-11</p>
-                <p className="text-muted-foreground">Envía la constancia al correo hola@fanahfragrances.com o por WhatsApp.</p>
+                <p className="text-muted-foreground">Envía la constancia al correo lujoembotellado@gmail.com o por WhatsApp.</p>
               </div>
             )}
             

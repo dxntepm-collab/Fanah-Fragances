@@ -9,7 +9,13 @@ args = ["pnpm", "store", "prune"]
 env = { "CI" = "true" }
 
 [workflows]
-runButton = "Project"
+runButton = "dev"
+
+[workflows.dev]
+modules = ["nodejs-24"]
+
+[[workflows.dev.launch]]
+args = ["pnpm", "dev"]
 
 [agent]
 stack = "PNPM_WORKSPACE"
@@ -30,3 +36,11 @@ externalPort = 80
 [[ports]]
 localPort = 22798
 externalPort = 3000
+
+[[ports]]
+localPort = 3000
+externalPort = 3000
+
+[[ports]]
+localPort = 5173
+externalPort = 5173

@@ -19,7 +19,7 @@ const checkoutSchema = z.object({
   customerName: z.string().min(2, "Nombre requerido"),
   customerEmail: z.string().email("Email inválido"),
   customerPhone: z.string().min(6, "Teléfono requerido"),
-  shippingMethod: z.enum(["delivery_lima", "shipping_provincia", "pickup"]),
+  shippingMethod: z.enum(["delivery_piura", "shipping_provincia", "pickup"]),
   shippingAddress: z.string().min(5, "Dirección requerida"),
   city: z.string().min(2, "Ciudad requerida"),
   paymentMethod: z.enum(["yape", "plin", "transfer", "cash_on_delivery"]),
@@ -40,9 +40,9 @@ export default function Checkout() {
       customerName: "",
       customerEmail: "",
       customerPhone: "",
-      shippingMethod: "delivery_lima",
+      shippingMethod: "delivery_piura",
       shippingAddress: "",
-      city: "Lima",
+      city: "Piura",
       paymentMethod: "yape",
       notes: "",
     },
@@ -52,7 +52,7 @@ export default function Checkout() {
   
   // Calculate dynamic shipping cost
   let shippingCost = 0;
-  if (watchShippingMethod === "delivery_lima") shippingCost = 1500; // S/ 15.00
+  if (watchShippingMethod === "Piura") shippingCost = 1500; // S/ 15.00
   if (watchShippingMethod === "shipping_provincia") shippingCost = 2500; // S/ 25.00
 
   const onSubmit = (data: CheckoutFormValues) => {
@@ -140,9 +140,9 @@ export default function Checkout() {
                       <FormControl>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           {[
-                            { id: "delivery_lima", label: "Delivery Lima", price: "+ S/ 15.00" },
+                            { id: "delivery_piura", label: "Delivery Piura", price: "+ S/ 15.00" },
                             { id: "shipping_provincia", label: "Envío a Provincia", price: "+ S/ 25.00" },
-                            { id: "pickup", label: "Recojo en Tienda", price: "Gratis" }
+                            { id: "pickup", label: "Recojo (consultar)", price: "Gratis" }
                           ].map(opt => (
                             <label 
                               key={opt.id}
@@ -219,7 +219,7 @@ export default function Checkout() {
                             { id: "yape", label: "Yape" },
                             { id: "plin", label: "Plin" },
                             { id: "transfer", label: "Transferencia BCP/IBK" },
-                            { id: "cash_on_delivery", label: "Contraentrega (Solo Lima)" }
+                            { id: "cash_on_delivery", label: "Contraentrega (Piura)" }
                           ].map(opt => {
                             if (opt.id === "cash_on_delivery" && watchShippingMethod === "shipping_provincia") return null;
                             

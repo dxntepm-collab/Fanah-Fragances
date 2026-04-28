@@ -26,15 +26,15 @@ export default function Home() {
             <span className="gold-gradient-text italic">Firma Olfativa</span>
           </h1>
           <p className="text-muted-foreground text-lg md:text-xl mb-10 font-light max-w-xl mx-auto">
-            Experimenta las fragancias más exclusivas del mundo en formatos decant de lujo. Alta perfumería a tu alcance en Lima.
+            Experimenta las fragancias más exclusivas del mundo en formatos decant de lujo. Alta perfumería a tu alcance en Piura.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/catalogo" className="bg-primary text-primary-foreground px-8 py-4 uppercase tracking-widest text-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
               Explorar Catálogo <ArrowRight size={16} />
             </Link>
-            <Link href="#que-es-un-decant" className="border border-border px-8 py-4 uppercase tracking-widest text-sm hover:border-primary hover:text-primary transition-colors">
+            <a href="#que-es-un-decant" className="border border-border px-8 py-4 uppercase tracking-widest text-sm hover:border-primary hover:text-primary transition-colors cursor-pointer">
               ¿Qué es un decant?
-            </Link>
+            </a>
           </div>
         </div>
       </section>
@@ -60,9 +60,11 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-            {featuredProducts?.map(product => (
+            {Array.isArray(featuredProducts) && featuredProducts.length > 0 ?
+             featuredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
-            ))}
+             )) : <div className="col-span-full text-center text-muted-foreground">No hay productos destacados</div>
+            }
           </div>
         )}
       </section>
@@ -144,9 +146,11 @@ export default function Home() {
           <div className="flex justify-center py-12"><div className="animate-pulse bg-primary/20 w-8 h-8 rounded-full"></div></div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6">
-            {bestsellers?.slice(0,5).map(product => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+            {Array.isArray(bestsellers) && bestsellers.length > 0 ?
+              bestsellers.slice(0, 5).map(product => (
+                <ProductCard key={product.id} product={product} />
+              )) : <div className="col-span-full text-center text-muted-foreground">No hay productos disponibles</div>
+            }
           </div>
         )}
       </section>
@@ -167,9 +171,11 @@ export default function Home() {
           <div className="flex justify-center py-12"><div className="animate-pulse bg-primary/20 w-8 h-8 rounded-full"></div></div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-            {newArrivals?.slice(0,4).map(product => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+            {Array.isArray(newArrivals) && newArrivals.length > 0 ?
+              newArrivals.slice(0, 4).map(product => (
+                <ProductCard key={product.id} product={product} />
+              )) : <div className="col-span-full text-center text-muted-foreground">No hay productos disponibles</div>
+            }
           </div>
         )}
       </section>
