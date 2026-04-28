@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Dev Servers",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/start-dev.ps1",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    }
+  ]
+}

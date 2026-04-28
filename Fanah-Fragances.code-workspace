@@ -1,0 +1,50 @@
+{
+  "folders": [
+    {
+      "path": ".",
+      "name": "Root"
+    },
+    {
+      "path": "artifacts/api-server",
+      "name": "API Server"
+    },
+    {
+      "path": "artifacts/decants-shop",
+      "name": "Frontend - Decants Shop"
+    },
+    {
+      "path": "artifacts/mockup-sandbox",
+      "name": "Mockup Sandbox"
+    },
+    {
+      "path": "lib/api-spec",
+      "name": "API Spec"
+    },
+    {
+      "path": "lib/api-client-react",
+      "name": "API Client React"
+    },
+    {
+      "path": "lib/api-zod",
+      "name": "API Zod"
+    },
+    {
+      "path": "lib/db",
+      "name": "Database"
+    }
+  ],
+  "settings": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "files.exclude": {
+      "**/.git": true,
+      "**/node_modules": true,
+      "**/.DS_Store": true
+    },
+    "search.exclude": {
+      "node_modules": true,
+      "artifacts/*/node_modules": true,
+      "artifacts/*/dist": true
+    }
+  }
+}
