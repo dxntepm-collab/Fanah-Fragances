@@ -20,7 +20,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "artifacts/decants-shop/dist/public/$1"
+      "dest": "artifacts/decants-shop/dist/public/index.html"
     }
   ]
 }
