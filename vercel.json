@@ -1,6 +1,6 @@
 {
-  "buildCommand": "pnpm -C artifacts/decants-shop build",
-  "outputDirectory": "artifacts/decants-shop/dist",
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist",
   "installCommand": "pnpm install --frozen-lockfile",
   "env": {
     "PORT": "3000",

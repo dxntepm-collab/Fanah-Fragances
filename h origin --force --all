@@ -1,0 +1,55 @@
+[33mcommit 015d2478c70f3ab5341b984d48172cfd981310f9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: Dante Panta <dxntepm@gmail.com>
+Date:   Tue Apr 28 14:38:38 2026 -0500
+
+    Clean repository
+
+[33mcommit ba3893be938df7422e53a8acf60467ed05b9aa5d[m
+Author: Dante Panta <dxntepm@gmail.com>
+Date:   Tue Apr 28 14:38:38 2026 -0500
+
+    Clean repository
+
+[33mcommit ee3d5c52aef571f2006fec6211058bb5b5556643[m
+Author: dxntepm <58076673-dxntepm@users.noreply.replit.com>
+Date:   Thu Apr 23 04:01:00 2026 +0000
+
+    Migrate backend database operations to Firebase Firestore
+    
+    Replaced PostgreSQL and Drizzle ORM with Firebase Admin SDK for database interactions, updating API routes and seeding scripts accordingly.
+    
+    Replit-Commit-Author: Agent
+    Replit-Commit-Session-Id: 70fb145a-e29a-492d-a317-8eb0d4c1140a
+    Replit-Commit-Checkpoint-Type: full_checkpoint
+    Replit-Commit-Event-Id: 9c2b50c3-de3e-40ea-901a-84afbf285d63
+    Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/699ec21f-3bf0-43c8-a902-f3ab1578d42f/70fb145a-e29a-492d-a317-8eb0d4c1140a/t04WiP0
+    Replit-Helium-Checkpoint-Created: true
+
+[33mcommit 2cd4582d1043c26f8b3d3432643039f19a3fec68[m
+Author: dxntepm <58076673-dxntepm@users.noreply.replit.com>
+Date:   Thu Apr 23 01:52:11 2026 +0000
+
+    Build a functional e-commerce store for perfume decants
+    
+    Implement a full-stack e-commerce application with user-facing features for browsing products, managing a cart, and completing purchases, including API endpoints for product catalog, cart management, and order processing.
+    
+    Replit-Commit-Author: Agent
+    Replit-Commit-Session-Id: 70fb145a-e29a-492d-a317-8eb0d4c1140a
+    Replit-Commit-Checkpoint-Type: full_checkpoint
+    Replit-Commit-Event-Id: bc8b94a4-c765-4dcc-acd9-968bdf7a57e4
+    Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/699ec21f-3bf0-43c8-a902-f3ab1578d42f/70fb145a-e29a-492d-a317-8eb0d4c1140a/hIBEUE5
+    Replit-Helium-Checkpoint-Created: true
+
+[33mcommit a61c20b28d8b548d50b19586b3a51bfb86df6ddc[m
+Author: dxntepm <58076673-dxntepm@users.noreply.replit.com>
+Date:   Thu Apr 23 01:39:38 2026 +0000
+
+    Initialize a new web project for selling perfume decants
+    
+    Sets up a new React-Vite project for a perfume decants e-commerce site, including UI component library integration and basic app structure.
+    
+    Replit-Commit-Author: Agent
+    Replit-Commit-Session-Id: 70fb145a-e29a-492d-a317-8eb0d4c1140a
+    Replit-Commit-Checkpoint-Type: full_checkpoint
+    Replit-Commit-Event-Id: 30320749-b9a1-43a3-94ba-04f4b1093e89
+    Replit-Helium-Checkpoint-Created: true
