@@ -65,10 +65,21 @@ type OrderDoc = {
 
 router.post("/admin/login", (req, res) => {
   const { password } = (req.body ?? {}) as { password?: string };
-  if (!password || !isAdminPassword(password)) {
+  
+  if (!password) {
+    res.status(400).json({ error: "password_required" });
+    return;
+  }
+  
+  if (!isAdminPassword(password)) {
+    // Log failed attempts (security)
+    console.warn(
+      `[SECURITY] Failed admin login attempt from ${req.ip}`,
+    );
     res.status(401).json({ error: "invalid_password" });
     return;
   }
+  
   setAdminCookie(res);
   res.json({ ok: true });
 });

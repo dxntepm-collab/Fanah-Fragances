@@ -12,9 +12,19 @@ export function adminToken(): string {
 }
 
 export function isAdminPassword(pwd: string): boolean {
-  const expected = process.env.ADMIN_PASSWORD || "";
-  if (!expected) return false;
+  const expected = process.env.ADMIN_PASSWORD;
+  
+  // Ensure password is configured
+  if (!expected) {
+    console.error(
+      "[ADMIN_AUTH] ADMIN_PASSWORD not configured! Set it in environment variables.",
+    );
+    return false;
+  }
+  
+  // Length check first to prevent timing attacks
   if (pwd.length !== expected.length) return false;
+  
   return crypto.timingSafeEqual(Buffer.from(pwd), Buffer.from(expected));
 }
 
