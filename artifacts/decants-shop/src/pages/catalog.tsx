@@ -179,9 +179,9 @@ export default function Catalog() {
               </div>
             ))}
           </div>
-        ) : products && products.length > 0 ? (
+        ) : (products || []).length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-            {products.map((product, i) => (
+            {(products || []).map((product, i) => (
               <div key={product.id} className="animate-in fade-in slide-in-from-bottom-4" style={{ animationDelay: `${i * 100}ms`, animationFillMode: 'both' }}>
                 <ProductCard product={product} />
               </div>
