@@ -1,11 +1,6 @@
 {
+  "framework": "vite",
   "buildCommand": "pnpm build",
   "outputDirectory": "artifacts/decants-shop/dist/public",
-  "installCommand": "pnpm install --frozen-lockfile",
-  "framework": "vite",
-  "env": {
-    "PORT": "3000",
-    "BASE_PATH": "/",
-    "NODE_ENV": "production"
-  }
+  "installCommand": "pnpm install --frozen-lockfile"
 }
