@@ -1,10 +1,11 @@
 {
- "buildCommand": "pnpm build",
+  "buildCommand": "pnpm build",
   "outputDirectory": "artifacts/decants-shop/dist/public",
   "installCommand": "pnpm install --frozen-lockfile",
-  "env": {
-    "PORT": "3000",
-    "BASE_PATH": "/",
-    "NODE_ENV": "production"
-  }
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
