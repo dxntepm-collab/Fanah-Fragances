@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { adminApi } from "@/lib/admin-api";
 import { formatPrice } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 
 type Order = Awaited<ReturnType<typeof adminApi.orders>>[number];
 
@@ -32,10 +32,20 @@ export default function AdminOrders() {
 
   const filtered = orders?.filter((o) => filter === "all" || o.status === filter) ?? [];
 
+  const handleDelete = async (id: number) => {
+    if (!confirm("¿Eliminar este pedido?")) return;
+    try {
+      await adminApi.deleteOrder(id);
+      setOrders((current) => current?.filter((order) => order.id !== id) ?? null);
+    } catch (error) {
+      alert((error as Error).message);
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="p-10">
-        <h1 className="text-2xl font-serif text-[#C9A961] mb-6">Pedidos</h1>
+        <h1 className="text-2xl font-serif text-[#1DD9D4] mb-6">Pedidos</h1>
 
         <div className="flex gap-2 mb-6">
           {[["all", "Todos"], ...Object.entries(STATUS_LABELS)].map(([v, l]) => (
@@ -44,7 +54,7 @@ export default function AdminOrders() {
               onClick={() => setFilter(v)}
               className={`px-3 py-1 text-xs uppercase tracking-wider border ${
                 filter === v
-                  ? "border-[#C9A961] text-[#C9A961]"
+                  ? "border-[#1DD9D4] text-[#1DD9D4]"
                   : "border-white/10 text-neutral-500 hover:text-neutral-300"
               }`}
             >
@@ -54,7 +64,7 @@ export default function AdminOrders() {
         </div>
 
         {!orders ? (
-          <Loader2 className="w-5 h-5 animate-spin text-[#C9A961]" />
+          <Loader2 className="w-5 h-5 animate-spin text-[#1DD9D4]" />
         ) : filtered.length === 0 ? (
           <p className="text-sm text-neutral-500">No hay pedidos.</p>
         ) : (
@@ -74,7 +84,7 @@ export default function AdminOrders() {
               {filtered.map((o) => (
                 <tr key={o.id} className="border-b border-white/5 hover:bg-white/5">
                   <td className="py-3">
-                    <Link href={`/admin/pedidos/${o.id}`} className="text-[#C9A961] hover:underline">
+                    <Link href={`/admin/pedidos/${o.id}`} className="text-[#1DD9D4] hover:underline">
                       {o.orderNumber}
                     </Link>
                   </td>
@@ -88,6 +98,14 @@ export default function AdminOrders() {
                   <td className="text-right text-neutral-200">{formatPrice(o.totalCents)}</td>
                   <td className="text-right text-neutral-500 text-xs">
                     {new Date(o.createdAt).toLocaleDateString("es-PE")}
+                  </td>
+                  <td className="text-right pl-4">
+                    <button
+                      onClick={() => handleDelete(o.id)}
+                      className="text-red-400 hover:text-red-300 text-xs"
+                    >
+                      <Trash2 className="inline w-4 h-4" />
+                    </button>
                   </td>
                 </tr>
               ))}

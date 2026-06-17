@@ -23,9 +23,9 @@ export default function AdminDashboard() {
   return (
     <AdminLayout>
       <div className="p-10 max-w-6xl">
-        <h1 className="text-2xl font-serif text-[#C9A961] mb-8">Resumen</h1>
+        <h1 className="text-2xl font-serif text-[#1DD9D4] mb-8">Resumen</h1>
         {!data ? (
-          <Loader2 className="w-5 h-5 animate-spin text-[#C9A961]" />
+          <Loader2 className="w-5 h-5 animate-spin text-[#1DD9D4]" />
         ) : (
           <>
             <div className="grid grid-cols-3 gap-4 mb-10">
@@ -47,7 +47,7 @@ export default function AdminDashboard() {
                     key={s.status}
                     className="border border-white/10 px-4 py-2 text-sm"
                   >
-                    <span className="text-[#C9A961]">{STATUS_LABELS[s.status] ?? s.status}</span>
+                    <span className="text-[#1DD9D4]">{STATUS_LABELS[s.status] ?? s.status}</span>
                     <span className="text-neutral-400 ml-3">{s.count}</span>
                   </div>
                 ))}
@@ -77,7 +77,7 @@ export default function AdminDashboard() {
                         <td className="py-3">
                           <Link
                             href={`/admin/pedidos/${o.id}`}
-                            className="text-[#C9A961] hover:underline"
+                            className="text-[#1DD9D4] hover:underline"
                           >
                             {o.orderNumber}
                           </Link>
@@ -112,7 +112,7 @@ function Stat({
 }) {
   return (
     <div className="border border-white/10 p-6">
-      <Icon className="w-5 h-5 text-[#C9A961] mb-3" />
+      <Icon className="w-5 h-5 text-[#1DD9D4] mb-3" />
       <div className="text-3xl font-serif text-neutral-100">{value}</div>
       <div className="text-xs uppercase tracking-wider text-neutral-500 mt-1">{label}</div>
     </div>

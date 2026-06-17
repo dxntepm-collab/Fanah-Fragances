@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import {
   Form,
   FormControl,
@@ -15,22 +16,35 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
-const checkoutSchema = z.object({
-  customerName: z.string().min(2, "Nombre requerido"),
-  customerEmail: z.string().email("Email inválido"),
-  customerPhone: z.string().min(6, "Teléfono requerido"),
-  shippingMethod: z.enum(["delivery_piura", "shipping_provincia", "pickup"]),
-  shippingAddress: z.string().min(5, "Dirección requerida"),
-  city: z.string().min(2, "Ciudad requerida"),
-  paymentMethod: z.enum(["yape", "cash_on_delivery"]),
-  notes: z.string().optional(),
-});
+const checkoutSchema = z.discriminatedUnion("shippingMethod", [
+  z.object({
+    customerName: z.string().min(2, "Nombre requerido"),
+    customerEmail: z.string().email("Email inválido"),
+    customerPhone: z.string().min(6, "Teléfono requerido"),
+    shippingMethod: z.literal("pickup"),
+    shippingAddress: z.string().optional(),
+    city: z.string().optional(),
+    paymentMethod: z.enum(["yape", "cash_on_delivery"]),
+    notes: z.string().optional(),
+  }),
+  z.object({
+    customerName: z.string().min(2, "Nombre requerido"),
+    customerEmail: z.string().email("Email inválido"),
+    customerPhone: z.string().min(6, "Teléfono requerido"),
+    shippingMethod: z.enum(["delivery_piura", "shipping_provincia"]),
+    shippingAddress: z.string().min(5, "Dirección requerida"),
+    city: z.string().min(2, "Ciudad requerida"),
+    paymentMethod: z.enum(["yape", "cash_on_delivery"]),
+    notes: z.string().optional(),
+  }),
+]);
 
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 
 export default function Checkout() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const { data: cart, isLoading: isCartLoading } = useGetCart();
   const createOrderMutation = useCreateOrder();
 
@@ -56,13 +70,33 @@ export default function Checkout() {
   if (watchShippingMethod === "shipping_provincia") shippingCost = 2500; // S/ 25.00
 
   const onSubmit = (data: CheckoutFormValues) => {
+    const payload = {
+      ...data,
+      shippingAddress:
+        data.shippingMethod === "pickup"
+          ? data.shippingAddress || "Recojo en tienda"
+          : data.shippingAddress,
+      city:
+        data.shippingMethod === "pickup"
+          ? data.city || "Recojo"
+          : data.city,
+    };
+
     createOrderMutation.mutate(
-      { data },
+      { data: payload },
       {
         onSuccess: (order) => {
           queryClient.invalidateQueries({ queryKey: getGetCartQueryKey() });
           setLocation(`/pedido/${order.orderNumber}`);
-        }
+        },
+        onError: (error) => {
+          const message = error instanceof Error ? error.message : "Error al crear el pedido";
+          toast({
+            title: "No se pudo crear el pedido",
+            description: message,
+            variant: "destructive",
+          });
+        },
       }
     );
   };

@@ -27,7 +27,7 @@ export default function AdminProductEdit() {
     return (
       <AdminLayout>
         <div className="p-10">
-          <Loader2 className="w-5 h-5 animate-spin text-[#C9A961]" />
+          <Loader2 className="w-5 h-5 animate-spin text-[#1DD9D4]" />
         </div>
       </AdminLayout>
     );
@@ -88,7 +88,7 @@ export default function AdminProductEdit() {
         </Link>
 
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-serif text-[#C9A961]">{product.name}</h1>
+          <h1 className="text-2xl font-serif text-[#1DD9D4]">{product.name}</h1>
           <button
             onClick={() => {
               if (confirm("¿Eliminar este perfume?")) {
@@ -132,7 +132,7 @@ export default function AdminProductEdit() {
             value={product.description}
             onChange={(e) => update({ description: e.target.value })}
             rows={4}
-            className="w-full bg-black border border-white/10 px-3 py-2 text-neutral-200 focus:border-[#C9A961] focus:outline-none"
+            className="w-full bg-black border border-white/10 px-3 py-2 text-neutral-200 focus:border-[#1DD9D4] focus:outline-none"
           />
         </div>
 
@@ -166,7 +166,7 @@ export default function AdminProductEdit() {
           <button
             onClick={save}
             disabled={saving}
-            className="bg-[#C9A961] text-black px-6 py-3 text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-[#D4AF37] disabled:opacity-50"
+            className="bg-[#1DD9D4] text-black px-6 py-3 text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-[#09c9c0] disabled:opacity-50"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Guardar cambios
@@ -179,7 +179,7 @@ export default function AdminProductEdit() {
             <h2 className="text-sm uppercase tracking-widest text-neutral-400">Variantes (decants)</h2>
             <button
               onClick={addVariant}
-              className="text-xs text-[#C9A961] hover:text-[#D4AF37] flex items-center gap-1"
+              className="text-xs text-[#1DD9D4] hover:text-[#09c9c0] flex items-center gap-1"
             >
               <Plus className="w-3 h-3" /> Agregar variante
             </button>
@@ -243,7 +243,7 @@ function VariantRow({
             onClick={() =>
               onSave(variant.id, { sizeMl, priceCents: Math.round(parseFloat(priceSoles) * 100), stock })
             }
-            className="text-[#C9A961] mr-3"
+            className="text-[#1DD9D4] mr-3"
             title="Guardar"
           >
             <Save className="w-4 h-4 inline" />
@@ -281,7 +281,7 @@ function NotesField({
         }
         rows={3}
         placeholder="bergamota, mandarina, ..."
-        className="w-full bg-black border border-white/10 px-3 py-2 text-neutral-200 text-sm focus:border-[#C9A961] focus:outline-none"
+        className="w-full bg-black border border-white/10 px-3 py-2 text-neutral-200 text-sm focus:border-[#1DD9D4] focus:outline-none"
       />
     </div>
   );
@@ -294,7 +294,7 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-black border border-white/10 px-3 py-2 text-neutral-200 focus:border-[#C9A961] focus:outline-none"
+        className="w-full bg-black border border-white/10 px-3 py-2 text-neutral-200 focus:border-[#1DD9D4] focus:outline-none"
       />
     </div>
   );
@@ -317,7 +317,7 @@ function SelectField({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-black border border-white/10 px-3 py-2 text-neutral-200 focus:border-[#C9A961] focus:outline-none"
+        className="w-full bg-black border border-white/10 px-3 py-2 text-neutral-200 focus:border-[#1DD9D4] focus:outline-none"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>

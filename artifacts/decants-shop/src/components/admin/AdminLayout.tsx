@@ -33,8 +33,8 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
   if (checking) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-black text-[#C9A961]">
-        <Loader2 className="w-6 h-6 animate-spin" />
+      <div className="min-h-[100dvh] flex items-center justify-center bg-black text-[#1DD9D4]">
+        <Loader2 className="w-6 h-6 animate-spin text-[#1DD9D4]" />
       </div>
     );
   }
@@ -43,7 +43,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     <div className="min-h-[100dvh] flex bg-black text-neutral-200">
       <aside className="w-60 border-r border-white/10 flex flex-col">
         <div className="px-6 py-6 border-b border-white/10">
-          <div className="text-xs tracking-[0.3em] text-[#C9A961]">FANAH</div>
+          <div className="text-xs tracking-[0.3em] text-[#1DD9D4]">FANAH</div>
           <div className="text-sm text-neutral-400 mt-1">Admin</div>
         </div>
         <nav className="flex-1 py-4">
@@ -60,7 +60,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
                 className={cn(
                   "flex items-center gap-3 px-6 py-3 text-sm transition-colors",
                   active
-                    ? "bg-white/5 text-[#C9A961] border-l-2 border-[#C9A961]"
+                    ? "bg-white/5 text-[#1DD9D4] border-l-2 border-[#1DD9D4]"
                     : "text-neutral-400 hover:bg-white/5 hover:text-neutral-200",
                 )}
               >

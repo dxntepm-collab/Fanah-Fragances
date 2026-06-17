@@ -467,4 +467,42 @@ router.patch("/admin/orders/:id", async (req, res) => {
   res.json({ ...o, createdAt: new Date(o.createdAt).toISOString() });
 });
 
+async function findOrderDoc(identifier: string) {
+  const id = Number(identifier);
+  if (!Number.isNaN(id)) {
+    const doc = await findDocByIntId("orders", id);
+    if (doc) return doc;
+  }
+
+  const snap = await fdb()
+    .collection("orders")
+    .where("orderNumber", "==", identifier)
+    .limit(1)
+    .get();
+
+  return snap.empty ? null : snap.docs[0]!;
+}
+
+router.delete("/admin/orders/:id", async (req, res) => {
+  const identifier = req.params.id;
+  const doc = await findOrderDoc(identifier);
+  if (!doc) {
+    res.status(404).json({ error: "not_found" });
+    return;
+  }
+  await doc.ref.delete();
+  res.json({ ok: true });
+});
+
+router.post("/admin/orders/:id/delete", async (req, res) => {
+  const identifier = req.params.id;
+  const doc = await findOrderDoc(identifier);
+  if (!doc) {
+    res.status(404).json({ error: "not_found" });
+    return;
+  }
+  await doc.ref.delete();
+  res.json({ ok: true });
+});
+
 export default router;

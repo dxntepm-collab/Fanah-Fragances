@@ -40,7 +40,7 @@ export default function AdminBrands() {
   return (
     <AdminLayout>
       <div className="p-10 max-w-5xl">
-        <h1 className="text-2xl font-serif text-[#C9A961] mb-8">Marcas</h1>
+        <h1 className="text-2xl font-serif text-[#1DD9D4] mb-8">Marcas</h1>
 
         <form
           onSubmit={handleCreate}
@@ -51,7 +51,7 @@ export default function AdminBrands() {
           <Field label="País" value={newBrand.country} onChange={(v) => setNewBrand({ ...newBrand, country: v })} />
           <button
             type="submit"
-            className="bg-[#C9A961] text-black px-5 py-2 text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-[#D4AF37]"
+            className="bg-[#1DD9D4] text-black px-5 py-2 text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-[#09c9c0]"
           >
             <Plus className="w-4 h-4" /> Agregar
           </button>
@@ -59,7 +59,7 @@ export default function AdminBrands() {
         </form>
 
         {!brands ? (
-          <Loader2 className="w-5 h-5 animate-spin text-[#C9A961]" />
+          <Loader2 className="w-5 h-5 animate-spin text-[#1DD9D4]" />
         ) : (
           <table className="w-full text-sm">
             <thead className="text-xs uppercase tracking-wider text-neutral-500">
@@ -108,7 +108,7 @@ function BrandRow({ brand, onChanged, onDelete }: { brand: Brand; onChanged: () 
       <td className="py-2 text-right text-neutral-400">{brand.productCount}</td>
       <td className="py-2 text-right whitespace-nowrap">
         {dirty && (
-          <button onClick={save} className="text-[#C9A961] hover:text-[#D4AF37] mr-3" title="Guardar">
+          <button onClick={save} className="text-[#1DD9D4] hover:text-[#09c9c0] mr-3" title="Guardar">
             <Save className="w-4 h-4 inline" />
           </button>
         )}
@@ -127,7 +127,7 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-black border border-white/10 px-3 py-2 text-neutral-200 focus:border-[#C9A961] focus:outline-none"
+        className="w-full bg-black border border-white/10 px-3 py-2 text-neutral-200 focus:border-[#1DD9D4] focus:outline-none"
       />
     </div>
   );

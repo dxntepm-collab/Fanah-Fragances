@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { adminApi } from "@/lib/admin-api";
 import { formatPrice } from "@/lib/utils";
@@ -31,6 +31,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 export default function AdminOrderDetail() {
   const { id } = useParams();
   const orderId = Number(id);
+  const [, setLocation] = useLocation();
   const [order, setOrder] = useState<Order | null>(null);
   const [updating, setUpdating] = useState(false);
 
@@ -49,11 +50,24 @@ export default function AdminOrderDetail() {
     }
   };
 
+  const deleteOrder = async () => {
+    if (!confirm("¿Eliminar este pedido?")) return;
+    setUpdating(true);
+    try {
+      await adminApi.deleteOrder(orderId);
+      setLocation("/admin/pedidos");
+    } catch (error) {
+      alert((error as Error).message);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   if (!order) {
     return (
       <AdminLayout>
         <div className="p-10">
-          <Loader2 className="w-5 h-5 animate-spin text-[#C9A961]" />
+          <Loader2 className="w-5 h-5 animate-spin text-[#1DD9D4]" />
         </div>
       </AdminLayout>
     );
@@ -69,7 +83,7 @@ export default function AdminOrderDetail() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <div className="text-xs uppercase tracking-widest text-neutral-500">Pedido</div>
-            <h1 className="text-2xl font-serif text-[#C9A961]">{order.orderNumber}</h1>
+            <h1 className="text-2xl font-serif text-[#1DD9D4]">{order.orderNumber}</h1>
             <div className="text-xs text-neutral-500 mt-1">
               {new Date(order.createdAt).toLocaleString("es-PE")}
             </div>
@@ -80,13 +94,20 @@ export default function AdminOrderDetail() {
               value={order.status}
               onChange={(e) => setStatus(e.target.value)}
               disabled={updating}
-              className="bg-black border border-[#C9A961] text-[#C9A961] px-3 py-2 text-sm focus:outline-none"
+              className="bg-black border border-[#1DD9D4] text-[#1DD9D4] px-3 py-2 text-sm focus:outline-none"
             >
               {STATUS_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
           </div>
+          <button
+            onClick={deleteOrder}
+            disabled={updating}
+            className="text-xs text-red-400 hover:text-red-300 border border-red-400 px-3 py-2"
+          >
+            Eliminar pedido
+          </button>
         </div>
 
         <div className="grid grid-cols-2 gap-6 mb-10">
@@ -146,7 +167,7 @@ export default function AdminOrderDetail() {
             <span>Envío</span>
             <span>{formatPrice(order.shippingCents)}</span>
           </div>
-          <div className="flex justify-between text-[#C9A961] text-lg font-serif border-t border-white/10 pt-2">
+          <div className="flex justify-between text-[#1DD9D4] text-lg font-serif border-t border-white/10 pt-2">
             <span>Total</span>
             <span>{formatPrice(order.totalCents)}</span>
           </div>

@@ -39,10 +39,10 @@ type OrderDoc = {
 
 function shippingCostCents(method: string) {
   switch (method) {
-    case "delivery_lima":
-      return 1000;
+    case "delivery_piura":
+      return 1500;
     case "shipping_provincia":
-      return 1800;
+      return 2500;
     case "pickup":
       return 0;
     default:
@@ -87,10 +87,9 @@ router.post("/orders", async (req, res) => {
     !body.customerName ||
     !body.customerEmail ||
     !body.customerPhone ||
-    !body.shippingAddress ||
-    !body.city ||
     !body.shippingMethod ||
-    !body.paymentMethod
+    !body.paymentMethod ||
+    (body.shippingMethod !== "pickup" && (!body.shippingAddress || !body.city))
   ) {
     res.status(400).json({ error: "missing_fields" });
     return;
@@ -186,8 +185,14 @@ router.post("/orders", async (req, res) => {
     customerName: body.customerName,
     customerEmail: body.customerEmail,
     customerPhone: body.customerPhone,
-    shippingAddress: body.shippingAddress,
-    city: body.city,
+    shippingAddress:
+      body.shippingMethod === "pickup"
+        ? body.shippingAddress || "Recojo en tienda"
+        : body.shippingAddress,
+    city:
+      body.shippingMethod === "pickup"
+        ? body.city || "Recojo"
+        : body.city,
     shippingMethod: body.shippingMethod,
     paymentMethod: body.paymentMethod,
     notes: body.notes ?? null,

@@ -31,7 +31,7 @@ export default function AdminLogin() {
         className="w-full max-w-sm border border-white/10 bg-neutral-950 p-10"
       >
         <div className="text-center mb-8">
-          <div className="text-xs tracking-[0.4em] text-[#C9A961]">FANAH</div>
+          <div className="text-xs tracking-[0.4em] text-[#1DD9D4]">FANAH</div>
           <div className="text-sm text-neutral-400 mt-2">Panel de Administración</div>
         </div>
         <label className="block text-xs uppercase tracking-wider text-neutral-500 mb-2">
@@ -42,7 +42,7 @@ export default function AdminLogin() {
           autoFocus
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="w-full bg-black border border-white/10 px-4 py-3 text-neutral-100 focus:border-[#C9A961] focus:outline-none"
+          className="w-full bg-black border border-white/10 px-4 py-3 text-neutral-100 focus:border-[#1DD9D4] focus:outline-none"
           placeholder="admin"
         />
         <label className="block text-xs uppercase tracking-wider text-neutral-500 mb-2 mt-4">
@@ -52,7 +52,7 @@ export default function AdminLogin() {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full bg-black border border-white/10 px-4 py-3 text-neutral-100 focus:border-[#C9A961] focus:outline-none"
+          className="w-full bg-black border border-white/10 px-4 py-3 text-neutral-100 focus:border-[#1DD9D4] focus:outline-none"
         />
         {error && (
           <div className="mt-3 text-xs text-red-400">{error}</div>
@@ -60,7 +60,7 @@ export default function AdminLogin() {
         <button
           type="submit"
           disabled={loading || !username || !password}
-          className="w-full mt-6 bg-[#C9A961] text-black py-3 text-xs uppercase tracking-widest hover:bg-[#D4AF37] disabled:opacity-50 flex items-center justify-center"
+          className="w-full mt-6 bg-[#1DD9D4] text-black py-3 text-xs uppercase tracking-widest hover:bg-[#09c9c0] disabled:opacity-50 flex items-center justify-center"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Ingresar"}
         </button>

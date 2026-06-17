@@ -145,4 +145,11 @@ export const adminApi = {
     }>("GET", `/admin/orders/${id}`),
   updateOrderStatus: (id: number, status: string) =>
     req("PATCH", `/admin/orders/${id}`, { status }),
+  deleteOrder: async (id: number) => {
+    try {
+      return await req<{ ok: true }>("POST", `/admin/orders/${id}/delete`);
+    } catch (error) {
+      return await req<{ ok: true }>("DELETE", `/admin/orders/${id}`);
+    }
+  },
 };
