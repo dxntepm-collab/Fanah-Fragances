@@ -15,7 +15,8 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
 }
 
 export const adminApi = {
-  login: (password: string) => req<{ ok: true }>("POST", "/admin/login", { password }),
+  login: (username: string, password: string) =>
+    req<{ ok: true }>("POST", "/admin/login", { username, password }),
   logout: () => req<{ ok: true }>("POST", "/admin/logout"),
   session: () => req<{ authenticated: boolean }>("GET", "/admin/session"),
   dashboard: () =>

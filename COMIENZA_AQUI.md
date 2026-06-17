@@ -24,7 +24,8 @@ pnpm dev
 ### URLs de acceso:
 - **Tienda**: http://localhost:5173
 - **Admin**: http://localhost:5173/admin/login
-- **Contraseña Admin**: `Lujo14`
+- **Usuario Admin**: `admin`
+- **Contraseña Admin**: `Lujo 14`
 
 ---
 

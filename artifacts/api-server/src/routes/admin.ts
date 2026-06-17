@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { fdb, genId } from "../lib/firestore";
 import {
+  isAdminUsername,
   isAdminPassword,
   setAdminCookie,
   clearAdminCookie,
@@ -64,22 +65,27 @@ type OrderDoc = {
 };
 
 router.post("/admin/login", (req, res) => {
-  const { password } = (req.body ?? {}) as { password?: string };
-  
-  if (!password) {
-    res.status(400).json({ error: "password_required" });
+  const { username, password } = (req.body ?? {}) as {
+    username?: string;
+    password?: string;
+  };
+
+  const trimmedUsername = username?.toString().trim();
+  const trimmedPassword = password?.toString().trim();
+
+  if (!trimmedUsername || !trimmedPassword) {
+    res.status(400).json({ error: "credentials_required" });
     return;
   }
-  
-  if (!isAdminPassword(password)) {
-    // Log failed attempts (security)
+
+  if (!isAdminUsername(trimmedUsername) || !isAdminPassword(trimmedPassword)) {
     console.warn(
-      `[SECURITY] Failed admin login attempt from ${req.ip}`,
+      `[SECURITY] Failed admin login attempt from ${req.ip} username=${trimmedUsername}`,
     );
-    res.status(401).json({ error: "invalid_password" });
+    res.status(401).json({ error: "invalid_credentials" });
     return;
   }
-  
+
   setAdminCookie(res);
   res.json({ ok: true });
 });

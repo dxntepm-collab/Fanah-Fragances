@@ -33,8 +33,8 @@ Una vez iniciados los servidores:
 
 ## 🔐 Credenciales del Admin
 
-- **Usuario**: (sin usuario, solo contraseña)
-- **Contraseña**: `Lujo14`
+- **Usuario**: `admin`
+- **Contraseña**: `Lujo 14`
 
 ## 📦 Estructura de Servidores
 
@@ -143,7 +143,7 @@ lsof -i :3000,:5173  # Linux/Mac
 ```
 PORT=3000
 NODE_ENV=development
-ADMIN_PASSWORD=Lujo14
+ADMIN_PASSWORD=Lujo 14
 FIREBASE_SERVICE_ACCOUNT={...}
 ```
 

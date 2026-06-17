@@ -100,7 +100,7 @@ export type CreateOrderBodyShippingMethod = typeof CreateOrderBodyShippingMethod
 
 
 export const CreateOrderBodyShippingMethod = {
-  delivery_lima: 'delivery_lima',
+  delivery_piura: 'delivery_piura',
   shipping_provincia: 'shipping_provincia',
   pickup: 'pickup',
 } as const;
@@ -110,8 +110,6 @@ export type CreateOrderBodyPaymentMethod = typeof CreateOrderBodyPaymentMethod[k
 
 export const CreateOrderBodyPaymentMethod = {
   yape: 'yape',
-  plin: 'plin',
-  transfer: 'transfer',
   cash_on_delivery: 'cash_on_delivery',
 } as const;
 

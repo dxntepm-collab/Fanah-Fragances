@@ -10,7 +10,7 @@ export type CreateOrderBodyShippingMethod = typeof CreateOrderBodyShippingMethod
 
 
 export const CreateOrderBodyShippingMethod = {
-  delivery_lima: 'delivery_lima',
+  delivery_piura: 'delivery_piura',
   shipping_provincia: 'shipping_provincia',
   pickup: 'pickup',
 } as const;

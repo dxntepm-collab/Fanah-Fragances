@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 
 export default function AdminLogin() {
   const [, setLocation] = useLocation();
+  const [username, setUsername] = useState("admin");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -14,10 +15,10 @@ export default function AdminLogin() {
     setError(null);
     setLoading(true);
     try {
-      await adminApi.login(password);
+      await adminApi.login(username.trim(), password.trim());
       setLocation("/admin");
     } catch {
-      setError("Contraseña incorrecta");
+      setError("Usuario o contraseña incorrectos");
     } finally {
       setLoading(false);
     }
@@ -34,11 +35,21 @@ export default function AdminLogin() {
           <div className="text-sm text-neutral-400 mt-2">Panel de Administración</div>
         </div>
         <label className="block text-xs uppercase tracking-wider text-neutral-500 mb-2">
+          Usuario
+        </label>
+        <input
+          type="text"
+          autoFocus
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          className="w-full bg-black border border-white/10 px-4 py-3 text-neutral-100 focus:border-[#C9A961] focus:outline-none"
+          placeholder="admin"
+        />
+        <label className="block text-xs uppercase tracking-wider text-neutral-500 mb-2 mt-4">
           Contraseña
         </label>
         <input
           type="password"
-          autoFocus
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="w-full bg-black border border-white/10 px-4 py-3 text-neutral-100 focus:border-[#C9A961] focus:outline-none"
@@ -48,7 +59,7 @@ export default function AdminLogin() {
         )}
         <button
           type="submit"
-          disabled={loading || !password}
+          disabled={loading || !username || !password}
           className="w-full mt-6 bg-[#C9A961] text-black py-3 text-xs uppercase tracking-widest hover:bg-[#D4AF37] disabled:opacity-50 flex items-center justify-center"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Ingresar"}

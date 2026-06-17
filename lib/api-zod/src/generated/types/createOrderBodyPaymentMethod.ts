@@ -11,7 +11,5 @@ export type CreateOrderBodyPaymentMethod = typeof CreateOrderBodyPaymentMethod[k
 
 export const CreateOrderBodyPaymentMethod = {
   yape: 'yape',
-  plin: 'plin',
-  transfer: 'transfer',
   cash_on_delivery: 'cash_on_delivery',
 } as const;

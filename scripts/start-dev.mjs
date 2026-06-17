@@ -147,7 +147,8 @@ async function main() {
   log("System", "📍 Access the application at:", "info");
   log("System", "   🏪 Frontend: http://localhost:5173", "info");
   log("System", "   🔐 Admin Panel: http://localhost:5173/admin/login", "info");
-  log("System", "   🔑 Admin Password: Lujo14", "warn");
+  log("System", "   🔑 Admin Username: admin", "warn");
+  log("System", "   🔑 Admin Password: Lujo 14", "warn");
   log("System", "   🛠️  API: http://localhost:3000", "info");
   log("System", "", "info");
   log("System", "Press Ctrl+C to stop all servers", "info");

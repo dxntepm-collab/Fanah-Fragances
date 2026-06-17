@@ -490,10 +490,10 @@ components:
           type: string
         shippingMethod:
           type: string
-          enum: [delivery_lima, shipping_provincia, pickup]
+          enum: [delivery_piura, shipping_provincia, pickup]
         paymentMethod:
           type: string
-          enum: [yape, plin, transfer, cash_on_delivery]
+          enum: [yape, cash_on_delivery]
         notes:
           type: string
 

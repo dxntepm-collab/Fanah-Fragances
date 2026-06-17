@@ -7,24 +7,30 @@ function secret(): string {
   return process.env.SESSION_SECRET || "fanah-dev-secret";
 }
 
+function expectedAdminUsername(): string {
+  return process.env.ADMIN_USERNAME || "admin";
+}
+
+function expectedAdminPassword(): string {
+  return process.env.ADMIN_PASSWORD || "Lujo 14";
+}
+
 export function adminToken(): string {
   return crypto.createHmac("sha256", secret()).update("admin:v1").digest("hex");
 }
 
+export function isAdminUsername(username: string): boolean {
+  const expected = expectedAdminUsername();
+  if (username.length !== expected.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(username), Buffer.from(expected));
+}
+
 export function isAdminPassword(pwd: string): boolean {
-  const expected = process.env.ADMIN_PASSWORD;
-  
-  // Ensure password is configured
-  if (!expected) {
-    console.error(
-      "[ADMIN_AUTH] ADMIN_PASSWORD not configured! Set it in environment variables.",
-    );
-    return false;
-  }
-  
+  const expected = expectedAdminPassword();
+
   // Length check first to prevent timing attacks
   if (pwd.length !== expected.length) return false;
-  
+
   return crypto.timingSafeEqual(Buffer.from(pwd), Buffer.from(expected));
 }
 
@@ -32,6 +38,7 @@ export function setAdminCookie(res: Response) {
   res.cookie(ADMIN_COOKIE, adminToken(), {
     httpOnly: true,
     sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
     maxAge: 1000 * 60 * 60 * 24 * 30,
     path: "/",
   });

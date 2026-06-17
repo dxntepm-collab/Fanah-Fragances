@@ -319,8 +319,8 @@ export const CreateOrderBody = zod.object({
   "customerPhone": zod.string(),
   "shippingAddress": zod.string(),
   "city": zod.string(),
-  "shippingMethod": zod.enum(['delivery_lima', 'shipping_provincia', 'pickup']),
-  "paymentMethod": zod.enum(['yape', 'plin', 'transfer', 'cash_on_delivery']),
+  "shippingMethod": zod.enum(['delivery_piura', 'shipping_provincia', 'pickup']),
+  "paymentMethod": zod.enum(['yape', 'cash_on_delivery']),
   "notes": zod.string().optional()
 })
 

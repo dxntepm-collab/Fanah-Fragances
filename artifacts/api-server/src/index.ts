@@ -17,16 +17,22 @@ import app from "./app";
 import { logger } from "./lib/logger";
 
 // Validate required environment variables
-const requiredEnvVars = [
-  "ADMIN_PASSWORD",
-  "SESSION_SECRET",
-];
+const requiredEnvVars = ["SESSION_SECRET"];
+const missingRequiredVars = requiredEnvVars.filter((v) => !process.env[v]);
+const optionalEnvVars = ["ADMIN_USERNAME", "ADMIN_PASSWORD"];
+const missingOptionalVars = optionalEnvVars.filter((v) => !process.env[v]);
 
-const missingVars = requiredEnvVars.filter((v) => !process.env[v]);
-if (missingVars.length > 0) {
-  throw new Error(
-    `Missing critical environment variables: ${missingVars.join(", ")}. ` +
-    `Set them in Vercel dashboard or .env.local file.`,
+if (missingRequiredVars.length > 0) {
+  console.warn(
+    `Missing required environment variables: ${missingRequiredVars.join(", ")}. ` +
+      `Using fallback defaults is not recommended for production. Set them in Vercel dashboard or .env.local file.`,
+  );
+}
+
+if (missingOptionalVars.length > 0) {
+  console.warn(
+    `Missing optional environment variables: ${missingOptionalVars.join(", ")}. ` +
+      `Using built-in defaults for admin credentials. Set them in Vercel dashboard or .env.local file.`,
   );
 }
 
