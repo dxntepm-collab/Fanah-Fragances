@@ -3,14 +3,19 @@
   "installCommand": "pnpm install --no-frozen-lockfile",
   "outputDirectory": "artifacts/decants-shop/dist/public",
   "version": 2,
-  "routes": [
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "rewrites": [
     {
-      "src": "^/api(?:/(.*))?$",
-      "dest": "/api/[...slug].js"
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
     },
     {
-      "src": "^/(.*)$",
-      "dest": "/index.html"
+      "source": "/((?!api).*)",
+      "destination": "/index.html"
     }
   ]
 }
